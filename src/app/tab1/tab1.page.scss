@@ -1,0 +1,106 @@
+.dashboard-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  opacity: 0.7;
+  margin: 4px 0 0;
+}
+
+.state-container {
+  text-align: center;
+  opacity: 0.8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+
+  ion-spinner {
+    margin-bottom: 4px;
+  }
+
+  ion-icon {
+    font-size: 32px;
+    margin-bottom: 4px;
+  }
+
+  &.error {
+    opacity: 1;
+  }
+}
+
+.bets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bet-card {
+  ion-card-header {
+    padding-bottom: 4px;
+  }
+}
+
+.bet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h2 {
+    font-size: 18px;
+    margin: 0;
+  }
+}
+
+.bet-creator {
+  font-size: 12px;
+  opacity: 0.7;
+  margin: 2px 0 0;
+}
+
+.bet-description {
+  margin-bottom: 8px;
+}
+
+.bet-stake {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  margin-bottom: 6px;
+
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+.bet-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+.bet-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}

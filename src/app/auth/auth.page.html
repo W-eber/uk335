@@ -1,0 +1,101 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>SetBet</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="auth-container">
+    <ion-card class="auth-card">
+      <ion-card-header>
+        <ion-card-title>
+          {{ mode === 'login' ? 'Einloggen' : 'Registrieren' }}
+        </ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <form (ngSubmit)="onSubmit()">
+          <!-- LOGIN -->
+          <ng-container *ngIf="mode === 'login'; else registerForm">
+            <ion-item>
+              <ion-label position="stacked">
+                E-Mail oder Username
+              </ion-label>
+              <ion-input
+                [(ngModel)]="loginIdentifier"
+                name="loginIdentifier"
+                autocomplete="username"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
+              <ion-label position="stacked">Passwort</ion-label>
+              <ion-input
+                type="password"
+                [(ngModel)]="loginPassword"
+                name="loginPassword"
+                autocomplete="current-password"
+              ></ion-input>
+            </ion-item>
+          </ng-container>
+
+          <!-- REGISTRATION -->
+          <ng-template #registerForm>
+            <ion-item>
+              <ion-label position="stacked">E-Mail</ion-label>
+              <ion-input
+                type="email"
+                [(ngModel)]="registerEmail"
+                name="registerEmail"
+                autocomplete="email"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
+              <ion-label position="stacked">Username</ion-label>
+              <ion-input
+                [(ngModel)]="registerUsername"
+                name="registerUsername"
+                autocomplete="username"
+              ></ion-input>
+            </ion-item>
+
+            <ion-item>
+              <ion-label position="stacked">Passwort</ion-label>
+              <ion-input
+                type="password"
+                [(ngModel)]="registerPassword"
+                name="registerPassword"
+                autocomplete="new-password"
+              ></ion-input>
+            </ion-item>
+          </ng-template>
+
+          <ion-text color="danger" *ngIf="errorMessage">
+            <p class="error-text">{{ errorMessage }}</p>
+          </ion-text>
+
+          <ion-button
+            expand="block"
+            type="submit"
+            [disabled]="loading"
+            class="submit-button"
+          >
+            {{ mode === 'login' ? 'Einloggen' : 'Registrieren' }}
+          </ion-button>
+        </form>
+
+        <div class="auth-switch">
+          <ng-container *ngIf="mode === 'login'; else switchToLogin">
+            <span>Noch kein Konto?</span>
+            <a (click)="setMode('register')">Jetzt registrieren</a>
+          </ng-container>
+          <ng-template #switchToLogin>
+            <span>Schon ein Konto?</span>
+            <a (click)="setMode('login')">Jetzt einloggen</a>
+          </ng-template>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+</ion-content>

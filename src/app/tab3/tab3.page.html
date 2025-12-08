@@ -1,17 +1,35 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Tab 3
-    </ion-title>
+    <ion-title>Einstellungen & Konto</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <div class="ion-padding">
+    <ion-list>
+      <ion-item>
+        <ion-label>Dark Mode</ion-label>
+        <ion-toggle
+          [(ngModel)]="isDarkMode"
+          (ionChange)="onDarkModeToggle()">
+        </ion-toggle>
+      </ion-item>
+    </ion-list>
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+    <ion-card *ngIf="userEmail || username">
+      <ion-card-header>
+        <ion-card-title>Konto</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p *ngIf="username">Benutzername: <strong>{{ username }}</strong></p>
+        <p *ngIf="userEmail">E-Mail: <strong>{{ userEmail }}</strong></p>
+      </ion-card-content>
+    </ion-card>
+
+    <ion-button expand="block" color="medium" (click)="logout()">
+      Logout
+    </ion-button>
+
+    <p *ngIf="loading">Einstellungen werden geladen...</p>
+  </div>
 </ion-content>

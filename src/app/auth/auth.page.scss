@@ -1,0 +1,36 @@
+.auth-container {
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.error-text {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.submit-button {
+  margin-top: 16px;
+}
+
+.auth-switch {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.8;
+
+  a {
+    margin-left: 4px;
+    color: var(--ion-color-primary);
+    text-decoration: none;
+    cursor: pointer;
+    font-weight: 500;
+  }
+}

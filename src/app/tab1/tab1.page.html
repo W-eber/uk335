@@ -1,17 +1,134 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Tab 1
-    </ion-title>
+    <ion-title>Dashboard</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 1</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="handleRefresh($event)">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <div>
+        <h1 class="page-title">Deine Wetten</h1>
+        <p class="page-subtitle">
+          Laufende, offene und bereits abgeschlossene Wetten im Überblick.
+        </p>
+      </div>
+
+      <ion-button size="small" (click)="goToCreateBet()">
+        Neue Wette
+      </ion-button>
+    </div>
+
+    <div class="state-container" *ngIf="loading">
+      <ion-spinner></ion-spinner>
+      <p>Daten werden geladen…</p>
+    </div>
+
+    <div class="state-container error" *ngIf="!loading && errorMessage">
+      <ion-text color="danger">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
+    </div>
+
+    <div
+      class="state-container"
+      *ngIf="!loading && !errorMessage && bets.length === 0"
+    >
+      <ion-icon name="trophy-outline"></ion-icon>
+      <p>Noch keine Wetten vorhanden.</p>
+      <small>Lege eine neue Wette an, um loszulegen.</small>
+    </div>
+
+    <div
+      *ngIf="!loading && !errorMessage && bets.length > 0"
+      class="bets-list"
+    >
+      <ion-card *ngFor="let bet of bets" class="bet-card">
+        <ion-card-header>
+          <div class="bet-header">
+            <div>
+              <h2>{{ bet.title }}</h2>
+              <p class="bet-creator" *ngIf="isMyBet(bet)">
+                (von dir erstellt)
+              </p>
+            </div>
+
+            <ion-badge
+              [color]="
+                bet.status === 'open'
+                  ? 'warning'
+                  : bet.status === 'accepted'
+                  ? 'success'
+                  : 'medium'
+              "
+            >
+              {{ bet.status | uppercase }}
+            </ion-badge>
+          </div>
+        </ion-card-header>
+
+        <ion-card-content>
+          <p *ngIf="bet.description" class="bet-description">
+            {{ bet.description }}
+          </p>
+
+          <div class="bet-stake">
+            <ion-icon
+              name="cash-outline"
+              *ngIf="bet.stake_type === 'money'"
+            ></ion-icon>
+            <ion-icon
+              name="document-text-outline"
+              *ngIf="bet.stake_type !== 'money'"
+            ></ion-icon>
+
+            <!-- Geldbetrag + Währung -->
+            <span
+              *ngIf="
+                bet.stake_type === 'money' && bet.stake_amount !== null
+              "
+            >
+              {{ bet.stake_amount }}
+              <ng-container *ngIf="bet.stake_currency">
+                {{ bet.stake_currency }}
+              </ng-container>
+            </span>
+
+            <!-- „Other“ / sonstiger Einsatz -->
+            <span
+              *ngIf="bet.stake_type === 'other' && bet.stake_text"
+            >
+              {{ bet.stake_text }}
+            </span>
+
+            <!-- Fallback -->
+            <span *ngIf="!bet.stake_type && bet.stake_text">
+              {{ bet.stake_text }}
+            </span>
+          </div>
+
+          <div class="bet-meta">
+            <span *ngIf="bet.invited_username">
+              Eingeladene Person:
+              <strong>{{ bet.invited_username }}</strong>
+            </span>
+            <span *ngIf="bet.created_at">
+              Erstell am
+              {{ bet.created_at | date: 'dd.MM.yyyy HH:mm' }}
+            </span>
+          </div>
+
+          <div class="bet-actions" *ngIf="isInvitedPending(bet)">
+            <ion-button size="small" (click)="acceptBet(bet)">
+              Akzeptieren
+            </ion-button>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </div>
+  </div>
 </ion-content>

@@ -1,0 +1,49 @@
+.page-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  opacity: 0.7;
+  margin-bottom: 16px;
+}
+
+.money-row {
+  display: flex;
+  gap: 8px;
+
+  ion-input {
+    flex: 1;
+  }
+}
+
+.submit-button {
+  margin-top: 16px;
+}
+
+.error-text {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.success-text {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.suggestions-list {
+  margin-top: 4px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.suggest-username {
+  font-weight: 500;
+}
+
+.suggest-email {
+  font-size: 12px;
+  opacity: 0.7;
+}
