@@ -14,7 +14,7 @@
       <div>
         <h1 class="page-title">Deine Wetten</h1>
         <p class="page-subtitle">
-          Laufende, offene und bereits abgeschlossene Wetten im Überblick.
+          Schneller Überblick – Details und Verlauf durch Antippen einer Wette.
         </p>
       </div>
 
@@ -47,13 +47,17 @@
       *ngIf="!loading && !errorMessage && bets.length > 0"
       class="bets-list"
     >
-      <ion-card *ngFor="let bet of bets" class="bet-card">
+      <ion-card
+        *ngFor="let bet of bets"
+        class="bet-card"
+        (click)="goToBetDetail(bet)"
+      >
         <ion-card-header>
           <div class="bet-header">
             <div>
               <h2>{{ bet.title }}</h2>
               <p class="bet-creator" *ngIf="isMyBet(bet)">
-                (von dir erstellt)
+                von dir erstellt
               </p>
             </div>
 
@@ -62,6 +66,8 @@
                 bet.status === 'open'
                   ? 'warning'
                   : bet.status === 'accepted'
+                  ? 'primary'
+                  : bet.status === 'completed'
                   ? 'success'
                   : 'medium'
               "
@@ -86,7 +92,6 @@
               *ngIf="bet.stake_type !== 'money'"
             ></ion-icon>
 
-            <!-- Geldbetrag + Währung -->
             <span
               *ngIf="
                 bet.stake_type === 'money' && bet.stake_amount !== null
@@ -98,34 +103,93 @@
               </ng-container>
             </span>
 
-            <!-- „Other“ / sonstiger Einsatz -->
             <span
               *ngIf="bet.stake_type === 'other' && bet.stake_text"
             >
-              {{ bet.stake_text }}
-            </span>
-
-            <!-- Fallback -->
-            <span *ngIf="!bet.stake_type && bet.stake_text">
               {{ bet.stake_text }}
             </span>
           </div>
 
           <div class="bet-meta">
             <span *ngIf="bet.invited_username">
-              Eingeladene Person:
+              Mitspieler:
               <strong>{{ bet.invited_username }}</strong>
             </span>
             <span *ngIf="bet.created_at">
-              Erstell am
               {{ bet.created_at | date: 'dd.MM.yyyy HH:mm' }}
             </span>
           </div>
 
-          <div class="bet-actions" *ngIf="isInvitedPending(bet)">
-            <ion-button size="small" (click)="acceptBet(bet)">
-              Akzeptieren
+          <div class="bet-extra-row">
+            <div class="bet-geo" *ngIf="hasGeoOnCreate(bet)">
+              <ion-icon name="location-outline"></ion-icon>
+              <span>Standort beim Erstellen gespeichert</span>
+            </div>
+            <div class="bet-geo" *ngIf="hasGeoOnCompletion(bet)">
+              <ion-icon name="flag-outline"></ion-icon>
+              <span>Standort beim Abschluss gespeichert</span>
+            </div>
+          </div>
+
+          <div class="bet-footer-row">
+            <div class="bet-photos-info">
+              <ion-icon name="camera-outline"></ion-icon>
+              <span>
+                {{ getPhotosForBet(bet).length }} Foto
+                {{
+                  getPhotosForBet(bet).length === 1 ? '' : 's'
+                }}
+              </span>
+            </div>
+
+            <ion-button
+              size="small"
+              fill="outline"
+              (click)="addPhoto(bet); $event.stopPropagation()"
+              *ngIf="isParticipant(bet)"
+            >
+              Foto hinzufügen
             </ion-button>
+          </div>
+
+          <div class="bet-actions">
+            <ion-button
+              size="small"
+              (click)="acceptBet(bet); $event.stopPropagation()"
+              *ngIf="isInvitedPending(bet)"
+            >
+              Wette akzeptieren
+            </ion-button>
+
+            <ion-button
+              size="small"
+              fill="outline"
+              (click)="proposeMeAsWinner(bet); $event.stopPropagation()"
+              *ngIf="canProposeWinner(bet)"
+            >
+              Ich habe gewonnen
+            </ion-button>
+
+            <div
+              class="winner-confirm-actions"
+              *ngIf="canConfirmWinner(bet)"
+            >
+              <ion-button
+                size="small"
+                color="success"
+                (click)="confirmWinner(bet); $event.stopPropagation()"
+              >
+                Gewinner bestätigen
+              </ion-button>
+              <ion-button
+                size="small"
+                color="medium"
+                fill="outline"
+                (click)="rejectWinner(bet); $event.stopPropagation()"
+              >
+                Vorschlag ablehnen
+              </ion-button>
+            </div>
           </div>
         </ion-card-content>
       </ion-card>

@@ -9,6 +9,7 @@ import { environment } from '../../environments/environment';
 
 export type BetStatus = 'open' | 'accepted' | 'completed' | 'cancelled';
 export type StakeType = 'money' | 'other' | null;
+export type WinnerStatus = 'none' | 'proposed' | 'confirmed' | 'rejected';
 
 export interface Profile {
   id: string;
@@ -20,9 +21,9 @@ export interface Profile {
 
 export interface Bet {
   id: string;
+  owner_id: string;
   title: string;
   description: string | null;
-  owner_id: string;
   invited_username: string | null;
   stake_type: StakeType;
   stake_amount: number | null;
@@ -30,6 +31,34 @@ export interface Bet {
   stake_text: string | null;
   status: BetStatus;
   created_at: string;
+
+  // Winner / Ergebnis
+  winner_id?: string | null;
+  winner_proposed_by?: string | null;
+  winner_status?: WinnerStatus | null;
+  winner_proposed_at?: string | null;
+  winner_confirmed_at?: string | null;
+  winner_confirmed_by?: string | null;
+
+  // Regel-Template
+  rule_template_key?: string | null;
+  rules_text?: string | null;
+
+  // Geolocation
+  created_lat?: number | null;
+  created_lng?: number | null;
+  completed_lat?: number | null;
+  completed_lng?: number | null;
+}
+
+export interface BetPhoto {
+  id: string;
+  bet_id: string;
+  user_id: string;
+  photo_url: string; // DataURL
+  created_at: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 @Injectable({
@@ -49,9 +78,7 @@ export class SupabaseService {
 
   async getSession(): Promise<Session | null> {
     const { data, error } = await this.supabase.auth.getSession();
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     return data.session ?? null;
   }
 
@@ -61,16 +88,11 @@ export class SupabaseService {
       password,
     });
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const user = data.user;
-    if (!user) {
-      throw new Error('Kein Benutzer nach Registrierung vorhanden.');
-    }
+    if (!user) throw new Error('Kein Benutzer nach Registrierung vorhanden.');
 
-    // Profil anlegen – inkl. E-Mail (für Username-Login)
     const { error: profileError } = await this.supabase
       .from('profiles')
       .insert({
@@ -93,26 +115,17 @@ export class SupabaseService {
       email,
       password,
     });
-
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data.user;
   }
 
-  /**
-   * Login mit E-Mail ODER Username im gleichen Feld.
-   */
   async signInWithIdentifier(identifier: string, password: string) {
     const trimmed = identifier.trim();
 
-    // Fall 1: E-Mail
     if (trimmed.includes('@')) {
       return this.signIn(trimmed, password);
     }
 
-    // Fall 2: Username -> E-Mail aus profiles holen
     const { data, error } = await this.supabase
       .from('profiles')
       .select('email')
@@ -134,16 +147,12 @@ export class SupabaseService {
 
   async signOut() {
     const { error } = await this.supabase.auth.signOut();
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
   }
 
   async getUser(): Promise<User | null> {
     const { data, error } = await this.supabase.auth.getUser();
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
     return data.user ?? null;
   }
 
@@ -151,9 +160,7 @@ export class SupabaseService {
 
   async getProfile(): Promise<Profile | null> {
     const user = await this.getUser();
-    if (!user) {
-      return null;
-    }
+    if (!user) return null;
 
     const { data, error } = await this.supabase
       .from('profiles')
@@ -161,10 +168,7 @@ export class SupabaseService {
       .eq('id', user.id)
       .single();
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data as Profile;
   }
 
@@ -176,10 +180,7 @@ export class SupabaseService {
       .order('username')
       .limit(10);
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return (data ?? []) as Profile[];
   }
 
@@ -191,11 +192,19 @@ export class SupabaseService {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return (data ?? []) as Bet[];
+  }
+
+  async getBetById(id: string): Promise<Bet | null> {
+    const { data, error } = await this.supabase
+      .from('bets')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data as Bet;
   }
 
   // ---------- Bets: Erstellen ----------
@@ -203,23 +212,22 @@ export class SupabaseService {
   async createBet(payload: {
     title: string;
     description?: string | null;
-    invitedUsername?: string | null;
+    invitedUsername: string;
     stakeType: StakeType;
     stakeAmount?: number | null;
     stakeCurrency?: string | null;
     stakeText?: string | null;
+    ruleTemplateKey: string;
+    rulesText: string;
+    createdLat?: number | null;
+    createdLng?: number | null;
   }): Promise<Bet> {
     const { data: userData, error: userError } =
       await this.supabase.auth.getUser();
-
-    if (userError) {
-      throw userError;
-    }
+    if (userError) throw userError;
 
     const user = userData.user;
-    if (!user) {
-      throw new Error('Nicht eingeloggt.');
-    }
+    if (!user) throw new Error('Nicht eingeloggt.');
 
     const { data, error } = await this.supabase
       .from('bets')
@@ -227,7 +235,7 @@ export class SupabaseService {
         owner_id: user.id,
         title: payload.title,
         description: payload.description ?? null,
-        invited_username: payload.invitedUsername ?? null,
+        invited_username: payload.invitedUsername,
         stake_type: payload.stakeType,
         stake_amount:
           payload.stakeType === 'money' ? payload.stakeAmount ?? null : null,
@@ -237,14 +245,16 @@ export class SupabaseService {
             : null,
         stake_text: payload.stakeText ?? null,
         status: 'open',
+        rule_template_key: payload.ruleTemplateKey,
+        rules_text: payload.rulesText,
+        winner_status: 'none',
+        created_lat: payload.createdLat ?? null,
+        created_lng: payload.createdLng ?? null,
       })
       .select()
       .single();
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data as Bet;
   }
 
@@ -256,8 +266,113 @@ export class SupabaseService {
       .update({ status: 'accepted' })
       .eq('id', betId);
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
+  }
+
+  // ---------- Winner-Flow ----------
+
+  async proposeMeAsWinner(betId: string): Promise<void> {
+    const { data, error } = await this.supabase.auth.getUser();
+    if (error) throw error;
+    const user = data.user;
+    if (!user) throw new Error('Nicht eingeloggt.');
+
+    const now = new Date().toISOString();
+
+    const { error: updateError } = await this.supabase
+      .from('bets')
+      .update({
+        winner_id: user.id,
+        winner_proposed_by: user.id,
+        winner_status: 'proposed',
+        winner_proposed_at: now,
+      })
+      .eq('id', betId);
+
+    if (updateError) throw updateError;
+  }
+
+  async confirmWinner(
+    betId: string,
+    opts?: { lat?: number | null; lng?: number | null }
+  ): Promise<void> {
+    const { data, error } = await this.supabase.auth.getUser();
+    if (error) throw error;
+    const user = data.user;
+    if (!user) throw new Error('Nicht eingeloggt.');
+
+    const now = new Date().toISOString();
+
+    const { error: updateError } = await this.supabase
+      .from('bets')
+      .update({
+        winner_status: 'confirmed',
+        status: 'completed',
+        completed_lat: opts?.lat ?? null,
+        completed_lng: opts?.lng ?? null,
+        winner_confirmed_at: now,
+        winner_confirmed_by: user.id,
+      })
+      .eq('id', betId);
+
+    if (updateError) throw updateError;
+  }
+
+  async rejectWinnerProposal(betId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('bets')
+      .update({
+        winner_status: 'rejected',
+        winner_id: null,
+        winner_proposed_by: null,
+        winner_proposed_at: null,
+        winner_confirmed_at: null,
+        winner_confirmed_by: null,
+      })
+      .eq('id', betId);
+
+    if (error) throw error;
+  }
+
+  // ---------- Bet-Photos ----------
+
+  async listBetPhotos(betId: string): Promise<BetPhoto[]> {
+    const { data, error } = await this.supabase
+      .from('bet_photos')
+      .select('*')
+      .eq('bet_id', betId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return (data ?? []) as BetPhoto[];
+  }
+
+  async addBetPhoto(params: {
+    betId: string;
+    imageDataUrl: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Promise<BetPhoto> {
+    const { data: userData, error: userError } =
+      await this.supabase.auth.getUser();
+    if (userError) throw userError;
+
+    const user = userData.user;
+    if (!user) throw new Error('Nicht eingeloggt.');
+
+    const { data, error } = await this.supabase
+      .from('bet_photos')
+      .insert({
+        bet_id: params.betId,
+        user_id: user.id,
+        photo_url: params.imageDataUrl,
+        latitude: params.latitude ?? null,
+        longitude: params.longitude ?? null,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data as BetPhoto;
   }
 }

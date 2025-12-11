@@ -14,10 +14,20 @@ import {
   IonRadio,
   IonButton,
   IonText,
+  IonSelect,
+  IonSelectOption,
+  IonSpinner,
 } from '@ionic/angular/standalone';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { Geolocation } from '@capacitor/geolocation';
 import { SupabaseService, Profile } from '../services/supabase.service';
+
+interface RuleTemplate {
+  key: string;
+  title: string;
+  text: string;
+}
 
 @Component({
   selector: 'app-tab2',
@@ -40,22 +50,58 @@ import { SupabaseService, Profile } from '../services/supabase.service';
     IonRadio,
     IonButton,
     IonText,
+    IonSelect,
+    IonSelectOption,
+    IonSpinner,
   ],
 })
 export class Tab2Page {
   title = '';
   description = '';
 
-  // Username-Suche
   invitedSearch = '';
   invitedSuggestions: Profile[] = [];
   invitedSelectedUsername: string | null = null;
 
-  // Einsatz
   stakeType: 'money' | 'other' = 'money';
   stakeAmount: number | null = null;
   stakeCurrency = '';
   stakeText = '';
+
+  ruleTemplates: RuleTemplate[] = [
+    {
+      key: 'standard',
+      title: 'Standard – private Kontaktdaten vorhanden',
+      text: [
+        '1. Beide Parteien bestätigen beim Akzeptieren dieser Wette, dass sie die privaten Kontaktdaten (Name, Zahlungsinformationen) der jeweils anderen Person ausserhalb der App besitzen.',
+        '2. Die Auszahlung des vereinbarten Betrags oder die Erfüllung des Einsatzes erfolgt direkt zwischen den Parteien ohne Beteiligung von SetBet.',
+        '3. SetBet dient ausschliesslich als neutrale Plattform zur Dokumentation der Abmachung (Zeitpunkt, Bedingungen, Status) und übernimmt keine Inkasso- oder Rechtsdienstleistungen.',
+      ].join('\n'),
+    },
+    {
+      key: 'money-strong',
+      title: 'Geldwette – klare Zahlungspflicht',
+      text: [
+        '1. Beide Parteien verpflichten sich, im Falle einer Niederlage den vereinbarten Geldbetrag vollständig und ohne unnötige Verzögerung zu bezahlen.',
+        '2. Die Parteien bestätigen, dass sie die nötigen Zahlungsinformationen der Gegenseite besitzen (z.B. IBAN, TWINT, PayPal o.ä.).',
+        '3. Kommt eine Partei ihrer Zahlungsverpflichtung nicht nach, besteht der Anspruch der Gewinner-Partei weiter – auch ausserhalb der App und auf zivilrechtlichem Weg.',
+        '4. SetBet dokumentiert nur die Abmachung und den Status, übernimmt aber keine Garantie für tatsächliche Zahlung oder Rechtsdurchsetzung.',
+      ].join('\n'),
+    },
+    {
+      key: 'honor',
+      title: 'Ehrenwette – Challenge oder Handlung',
+      text: [
+        '1. Gegenstand der Wette ist primär eine Handlung oder Challenge (z.B. Aufgabe, Dienstleistung, öffentliches Einlösen einer Strafe).',
+        '2. Beide Parteien bestätigen, dass sie die vereinbarte Handlung im Falle einer Niederlage ernst nehmen und nach bestem Wissen erfüllen.',
+        '3. Allfällige Nebenabmachungen (z.B. kleiner Betrag, Essen ausgeben) werden im Beschreibungstext der Wette oder im Einsatz-Feld festgehalten.',
+        '4. SetBet speichert die Abmachung und den Status, übernimmt aber keine Verantwortung dafür, ob die Handlung tatsächlich ausgeführt wird.',
+      ].join('\n'),
+    },
+  ];
+
+  selectedRuleKey: string = this.ruleTemplates[0].key;
+  selectedRuleText: string = this.ruleTemplates[0].text;
 
   loading = false;
   errorMessage = '';
@@ -74,9 +120,7 @@ export class Tab2Page {
     this.errorMessage = '';
 
     const term = this.invitedSearch.trim();
-    if (term.length < 2) {
-      return;
-    }
+    if (term.length < 2) return;
 
     try {
       this.invitedSuggestions =
@@ -92,6 +136,15 @@ export class Tab2Page {
     this.invitedSuggestions = [];
   }
 
+  onRuleTemplateChange(ev: any) {
+    const key = ev.detail?.value ?? this.selectedRuleKey;
+    const tpl = this.ruleTemplates.find((t) => t.key === key);
+    if (tpl) {
+      this.selectedRuleKey = tpl.key;
+      this.selectedRuleText = tpl.text;
+    }
+  }
+
   async createBet() {
     this.errorMessage = '';
     this.successMessage = '';
@@ -101,20 +154,20 @@ export class Tab2Page {
       return;
     }
 
-    // Username muss gewählt sein, wenn etwas im Feld steht
-    let invitedUsername: string | null = null;
-    if (this.invitedSearch.trim()) {
-      if (
-        this.invitedSelectedUsername &&
-        this.invitedSelectedUsername === this.invitedSearch.trim()
-      ) {
-        invitedUsername = this.invitedSelectedUsername;
-      } else {
-        this.errorMessage =
-          'Bitte einen existierenden Benutzer aus der Liste auswählen.';
-        return;
-      }
+    const invitedTrimmed = this.invitedSearch.trim();
+    if (!invitedTrimmed) {
+      this.errorMessage = 'Bitte einen Mitspieler per Username auswählen.';
+      return;
     }
+    if (
+      !this.invitedSelectedUsername ||
+      this.invitedSelectedUsername !== invitedTrimmed
+    ) {
+      this.errorMessage =
+        'Bitte einen existierenden Benutzer aus der Vorschlagsliste auswählen.';
+      return;
+    }
+    const invitedUsername = this.invitedSelectedUsername;
 
     if (this.stakeType === 'money') {
       if (!this.stakeAmount || this.stakeAmount <= 0) {
@@ -134,6 +187,21 @@ export class Tab2Page {
 
     this.loading = true;
 
+    let createdLat: number | null = null;
+    let createdLng: number | null = null;
+
+    try {
+      await Geolocation.requestPermissions();
+      const pos = await Geolocation.getCurrentPosition();
+      createdLat = pos.coords.latitude;
+      createdLng = pos.coords.longitude;
+    } catch (geoErr) {
+      console.warn(
+        'Geolocation beim Erstellen der Wette nicht verfügbar',
+        geoErr
+      );
+    }
+
     try {
       await this.supabaseService.createBet({
         title: this.title.trim(),
@@ -142,11 +210,13 @@ export class Tab2Page {
         stakeType: this.stakeType,
         stakeAmount: this.stakeType === 'money' ? this.stakeAmount : null,
         stakeCurrency:
-          this.stakeType === 'money'
-            ? this.stakeCurrency.trim()
-            : null,
+          this.stakeType === 'money' ? this.stakeCurrency.trim() : null,
         stakeText:
           this.stakeType === 'other' ? this.stakeText.trim() : null,
+        ruleTemplateKey: this.selectedRuleKey,
+        rulesText: this.selectedRuleText,
+        createdLat,
+        createdLng,
       });
 
       this.successMessage = 'Wette wurde erstellt.';
@@ -174,5 +244,7 @@ export class Tab2Page {
     this.stakeAmount = null;
     this.stakeCurrency = '';
     this.stakeText = '';
+    this.selectedRuleKey = this.ruleTemplates[0].key;
+    this.selectedRuleText = this.ruleTemplates[0].text;
   }
 }

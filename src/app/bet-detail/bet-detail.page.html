@@ -1,0 +1,140 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/tab1"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Wette</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="page-container">
+    <div *ngIf="loading" class="state-container">
+      <ion-spinner></ion-spinner>
+      <p>Wett-Details werden geladen…</p>
+    </div>
+
+    <div *ngIf="!loading && errorMessage" class="state-container error">
+      <ion-text color="danger">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
+    </div>
+
+    <ng-container *ngIf="!loading && bet">
+      <ion-card>
+        <ion-card-header>
+          <h1 class="bet-title">{{ bet.title }}</h1>
+          <p class="bet-status">
+            Status:
+            <strong>{{ bet.status | uppercase }}</strong>
+          </p>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="section">
+            <h2>Abmachungen & Einsatz</h2>
+            <p *ngIf="bet.description" class="bet-description">
+              {{ bet.description }}
+            </p>
+
+            <div class="row">
+              <span>Einsatz:</span>
+              <span *ngIf="bet.stake_type === 'money' && bet.stake_amount">
+                {{ bet.stake_amount }}
+                <ng-container *ngIf="bet.stake_currency">
+                  {{ bet.stake_currency }}
+                </ng-container>
+              </span>
+              <span
+                *ngIf="bet.stake_type === 'other' && bet.stake_text"
+              >
+                {{ bet.stake_text }}
+              </span>
+              <span
+                *ngIf="
+                  (!bet.stake_type || bet.stake_type === null) &&
+                  !bet.stake_text
+                "
+              >
+                –
+              </span>
+            </div>
+
+            <div class="row" *ngIf="bet.invited_username">
+              <span>Mitspieler:</span>
+              <span>{{ bet.invited_username }}</span>
+            </div>
+          </div>
+
+          <div class="section" *ngIf="bet.rules_text">
+            <h2>Regeln (Template)</h2>
+            <pre>{{ bet.rules_text }}</pre>
+          </div>
+
+          <div class="section">
+            <h2>Systemdaten</h2>
+            <div class="row">
+              <span>Erstellt am:</span>
+              <span>
+                {{ bet.created_at | date: 'dd.MM.yyyy HH:mm' }}
+              </span>
+            </div>
+            <div class="row" *ngIf="bet.winner_status && bet.winner_status !== 'none'">
+              <span>Gewinner-Status:</span>
+              <span>{{ bet.winner_status }}</span>
+            </div>
+          </div>
+
+          <div class="section" *ngIf="photos.length > 0">
+            <h2>Fotos / Beweise</h2>
+            <div class="photos-grid">
+              <img
+                *ngFor="let p of photos"
+                [src]="p.photo_url"
+                alt="Bet Photo"
+              />
+            </div>
+          </div>
+
+          <div class="section">
+            <h2>Verlauf</h2>
+            <div
+              *ngFor="let e of events"
+              class="event-card"
+            >
+              <div class="event-header">
+                <ion-icon
+                  [name]="
+                    e.type === 'created'
+                      ? 'document-outline'
+                      : e.type === 'photo'
+                      ? 'camera-outline'
+                      : e.type === 'winner-proposed'
+                      ? 'person-add-outline'
+                      : 'flag-outline'
+                  "
+                ></ion-icon>
+                <div>
+                  <h3>{{ e.title }}</h3>
+                  <p class="event-meta">
+                    {{ e.actor }} ·
+                    {{ e.timestamp | date: 'dd.MM.yyyy HH:mm' }}
+                  </p>
+                </div>
+              </div>
+              <p class="event-description">
+                {{ e.description }}
+              </p>
+              <p class="event-location">
+                {{ formatLocation(e) }}
+              </p>
+            </div>
+
+            <p *ngIf="events.length === 0" class="no-events">
+              Noch keine Verlaufsdaten gespeichert.
+            </p>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    </ng-container>
+  </div>
+</ion-content>

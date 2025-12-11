@@ -5,119 +5,128 @@
 </ion-header>
 
 <ion-content>
-  <div class="ion-padding">
-    <h1 class="page-title">Wette erstellen</h1>
+  <div class="page-container">
+    <h1 class="page-title">SetBet – Wette erstellen</h1>
     <p class="page-subtitle">
-      Definiere Titel, Einsatz und eine eingeladene Person.
+      Definiere Einsatz, Mitspieler und Regeln klar und nachvollziehbar.
     </p>
 
     <ion-list lines="full">
       <ion-item>
-        <ion-label position="stacked">Titel</ion-label>
+        <ion-label position="stacked">Titel der Wette</ion-label>
         <ion-input
           [(ngModel)]="title"
-          name="title"
+          placeholder="z.B. Challenge im Sport, Spiel oder Alltag"
         ></ion-input>
       </ion-item>
 
       <ion-item>
         <ion-label position="stacked">Beschreibung (optional)</ion-label>
         <ion-textarea
+          auto-grow="true"
           [(ngModel)]="description"
-          name="description"
-          autoGrow="true"
+          placeholder="Kurz beschreiben, worum es bei der Wette geht."
         ></ion-textarea>
       </ion-item>
 
-      <!-- Username-Suche -->
       <ion-item>
-        <ion-label position="stacked">Mitspieler (Username, optional)</ion-label>
+        <ion-label position="stacked">Mitspieler (Username)</ion-label>
         <ion-input
           [(ngModel)]="invitedSearch"
-          name="invitedSearch"
-          placeholder="Benutzer suchen"
           (ionInput)="onInvitedSearchChange($event)"
+          placeholder="Username der anderen Person"
         ></ion-input>
       </ion-item>
 
-      <ion-list
-        *ngIf="invitedSuggestions.length > 0"
-        class="suggestions-list"
+      <ion-item
+        button
+        detail="false"
+        *ngFor="let p of invitedSuggestions"
+        (click)="selectInvitedUser(p)"
       >
-        <ion-item
-          button
-          detail="false"
-          *ngFor="let p of invitedSuggestions"
-          (click)="selectInvitedUser(p)"
-        >
-          <ion-label>
-            <div class="suggest-username">{{ p.username }}</div>
-            <div class="suggest-email" *ngIf="p.email">
-              {{ p.email }}
-            </div>
-          </ion-label>
-        </ion-item>
-      </ion-list>
+        <ion-label>{{ p.username }}</ion-label>
+      </ion-item>
 
-      <!-- Einsatzart -->
       <ion-item>
-        <ion-label position="stacked">Art des Einsatzes</ion-label>
-        <ion-radio-group [(ngModel)]="stakeType" name="stakeType">
-          <ion-item>
+        <ion-label position="stacked">Einsatz</ion-label>
+        <ion-radio-group [(ngModel)]="stakeType">
+          <ion-item lines="none">
             <ion-label>Geldbetrag</ion-label>
-            <ion-radio value="money" slot="start"></ion-radio>
+            <ion-radio slot="start" value="money"></ion-radio>
           </ion-item>
-          <ion-item>
-            <ion-label>Anderes / Custom</ion-label>
-            <ion-radio value="other" slot="start"></ion-radio>
+          <ion-item lines="none">
+            <ion-label>Andere Gegenleistung</ion-label>
+            <ion-radio slot="start" value="other"></ion-radio>
           </ion-item>
         </ion-radio-group>
       </ion-item>
 
-      <!-- Geld: Betrag + Währung -->
-      <ion-item *ngIf="stakeType === 'money'">
-        <ion-label position="stacked">Betrag &amp; Währung</ion-label>
-        <div class="money-row">
+      <ng-container *ngIf="stakeType === 'money'">
+        <ion-item>
+          <ion-label position="stacked">Betrag</ion-label>
           <ion-input
             type="number"
             [(ngModel)]="stakeAmount"
-            name="stakeAmount"
-            placeholder="Betrag"
+            placeholder="z.B. 20"
           ></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Währung</ion-label>
           <ion-input
             [(ngModel)]="stakeCurrency"
-            name="stakeCurrency"
-            placeholder="Währung"
+            placeholder="z.B. CHF, EUR"
           ></ion-input>
-        </div>
-      </ion-item>
+        </ion-item>
+      </ng-container>
 
-      <!-- Other: Textbeschreibung -->
-      <ion-item *ngIf="stakeType === 'other'">
-        <ion-label position="stacked">Einsatz / Verpflichtung</ion-label>
-        <ion-textarea
-          [(ngModel)]="stakeText"
-          name="stakeText"
-          autoGrow="true"
-        ></ion-textarea>
+      <ng-container *ngIf="stakeType === 'other'">
+        <ion-item>
+          <ion-label position="stacked">Beschreibung des Einsatzes</ion-label>
+          <ion-textarea
+            auto-grow="true"
+            [(ngModel)]="stakeText"
+            placeholder="z.B. Essen ausgeben, bestimmte Aufgabe erledigen…"
+          ></ion-textarea>
+        </ion-item>
+      </ng-container>
+
+      <ion-item>
+        <ion-label position="stacked">Regel-Template</ion-label>
+        <ion-select
+          [(ngModel)]="selectedRuleKey"
+          (ionChange)="onRuleTemplateChange($event)"
+        >
+          <ion-select-option
+            *ngFor="let t of ruleTemplates"
+            [value]="t.key"
+          >
+            {{ t.title }}
+          </ion-select-option>
+        </ion-select>
       </ion-item>
     </ion-list>
 
-    <ion-text color="danger" *ngIf="errorMessage">
-      <p class="error-text">{{ errorMessage }}</p>
-    </ion-text>
+    <div class="rules-preview">
+      <h2>Regeln (Vorschlag)</h2>
+      <pre>{{ selectedRuleText }}</pre>
+    </div>
 
-    <ion-text color="success" *ngIf="successMessage">
-      <p class="success-text">{{ successMessage }}</p>
-    </ion-text>
+    <div class="messages">
+      <ion-text color="danger" *ngIf="errorMessage">
+        <p>{{ errorMessage }}</p>
+      </ion-text>
+      <ion-text color="success" *ngIf="successMessage">
+        <p>{{ successMessage }}</p>
+      </ion-text>
+    </div>
 
     <ion-button
       expand="block"
       (click)="createBet()"
       [disabled]="loading"
-      class="submit-button"
     >
-      {{ loading ? 'Erstelle Wette…' : 'Wette erstellen' }}
+      <ion-spinner slot="start" *ngIf="loading"></ion-spinner>
+      Wette erstellen
     </ion-button>
   </div>
 </ion-content>

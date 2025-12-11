@@ -17,7 +17,13 @@ import {
   IonButton,
 } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
-import { SupabaseService, Bet } from '../services/supabase.service';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { Geolocation } from '@capacitor/geolocation';
+import {
+  SupabaseService,
+  Bet,
+  BetPhoto,
+} from '../services/supabase.service';
 
 @Component({
   selector: 'app-tab1',
@@ -44,6 +50,7 @@ import { SupabaseService, Bet } from '../services/supabase.service';
 })
 export class Tab1Page implements OnInit {
   bets: Bet[] = [];
+  betPhotos: Record<string, BetPhoto[]> = {};
   loading = true;
   errorMessage = '';
   currentUserId: string | null = null;
@@ -74,9 +81,19 @@ export class Tab1Page implements OnInit {
   async loadBets() {
     this.loading = true;
     this.errorMessage = '';
+    this.betPhotos = {};
 
     try {
       this.bets = await this.supabaseService.listBets();
+
+      for (const bet of this.bets) {
+        try {
+          const photos = await this.supabaseService.listBetPhotos(bet.id);
+          this.betPhotos[bet.id] = photos;
+        } catch (photoErr) {
+          console.warn('Fehler beim Laden der Fotos für Bet', bet.id, photoErr);
+        }
+      }
     } catch (err: any) {
       console.error('Error loading bets', err);
       this.errorMessage = err?.message ?? 'Fehler beim Laden der Wetten.';
@@ -97,16 +114,37 @@ export class Tab1Page implements OnInit {
     return !!this.currentUserId && bet.owner_id === this.currentUserId;
   }
 
+  isParticipant(bet: Bet): boolean {
+    if (!this.currentUserId || !this.currentUsername) return false;
+    const isOwner = bet.owner_id === this.currentUserId;
+    const isInvited = bet.invited_username === this.currentUsername;
+    return isOwner || isInvited;
+  }
+
   isInvitedPending(bet: Bet): boolean {
-    if (bet.status !== 'open') {
-      return false;
-    }
-
-    if (!this.currentUsername) {
-      return false;
-    }
-
+    if (bet.status !== 'open') return false;
+    if (!this.currentUsername) return false;
     return bet.invited_username === this.currentUsername;
+  }
+
+  canProposeWinner(bet: Bet): boolean {
+    if (!this.isParticipant(bet)) return false;
+    if (bet.status !== 'accepted') return false;
+    const ws = bet.winner_status ?? 'none';
+    return ws === 'none' || ws === 'rejected';
+  }
+
+  canConfirmWinner(bet: Bet): boolean {
+    if (!this.isParticipant(bet)) return false;
+    if (bet.status !== 'accepted') return false;
+    const ws = bet.winner_status ?? 'none';
+    if (ws !== 'proposed') return false;
+    if (!this.currentUserId) return false;
+    return bet.winner_proposed_by !== this.currentUserId;
+  }
+
+  canRejectWinner(bet: Bet): boolean {
+    return this.canConfirmWinner(bet);
   }
 
   async acceptBet(bet: Bet) {
@@ -115,10 +153,141 @@ export class Tab1Page implements OnInit {
       bet.status = 'accepted';
     } catch (err) {
       console.error('Error accepting bet', err);
+      alert('Fehler beim Akzeptieren der Wette.');
+    }
+  }
+
+  async proposeMeAsWinner(bet: Bet) {
+    try {
+      await this.supabaseService.proposeMeAsWinner(bet.id);
+      bet.winner_status = 'proposed';
+      bet.winner_id = this.currentUserId;
+      bet.winner_proposed_by = this.currentUserId;
+    } catch (err) {
+      console.error('Error proposing winner', err);
+      alert('Fehler beim Eintragen als Gewinner.');
+    }
+  }
+
+  async confirmWinner(bet: Bet) {
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    try {
+      await Geolocation.requestPermissions();
+      const pos = await Geolocation.getCurrentPosition();
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch (geoErr) {
+      console.warn('Geolocation beim Abschliessen der Wette nicht verfügbar', geoErr);
+    }
+
+    try {
+      await this.supabaseService.confirmWinner(bet.id, { lat, lng });
+      bet.winner_status = 'confirmed';
+      bet.status = 'completed';
+      bet.completed_lat = lat;
+      bet.completed_lng = lng;
+    } catch (err) {
+      console.error('Error confirming winner', err);
+      alert('Fehler beim Bestätigen des Gewinners.');
+    }
+  }
+
+  async rejectWinner(bet: Bet) {
+    try {
+      await this.supabaseService.rejectWinnerProposal(bet.id);
+      bet.winner_status = 'rejected';
+      bet.winner_id = null;
+      bet.winner_proposed_by = null;
+      bet.winner_proposed_at = null;
+      bet.winner_confirmed_at = null;
+      bet.winner_confirmed_by = null;
+    } catch (err) {
+      console.error('Error rejecting winner', err);
+      alert('Fehler beim Ablehnen des Gewinner-Vorschlags.');
     }
   }
 
   goToCreateBet() {
     this.router.navigateByUrl('/tabs/tab2');
+  }
+
+  goToBetDetail(bet: Bet) {
+    this.router.navigate(['/bet', bet.id]);
+  }
+
+  async addPhoto(bet: Bet) {
+    if (!this.isParticipant(bet)) return;
+
+    try {
+      const perm = await Camera.requestPermissions();
+      if (perm.camera !== 'granted') {
+        alert(
+          'Die Kamera-Berechtigung wurde nicht erteilt. Bitte in den App-Einstellungen freigeben.'
+        );
+        return;
+      }
+    } catch (permErr) {
+      console.error('Fehler beim Abfragen der Kamera-Berechtigung', permErr);
+    }
+
+    let photoDataUrl: string | null = null;
+
+    try {
+      const photo = await Camera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Camera,
+        quality: 70,
+      });
+
+      if (!photo.dataUrl) return;
+      photoDataUrl = photo.dataUrl;
+    } catch (camErr) {
+      console.error('Fehler bei Kamera-Aufnahme', camErr);
+      alert('Kamera konnte nicht gestartet werden.');
+      return;
+    }
+
+    let lat: number | null = null;
+    let lng: number | null = null;
+
+    try {
+      await Geolocation.requestPermissions();
+      const pos = await Geolocation.getCurrentPosition();
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
+    } catch (geoErr) {
+      console.warn('Geolocation beim Erstellen eines Fotos nicht verfügbar', geoErr);
+    }
+
+    try {
+      const created = await this.supabaseService.addBetPhoto({
+        betId: bet.id,
+        imageDataUrl: photoDataUrl,
+        latitude: lat,
+        longitude: lng,
+      });
+
+      if (!this.betPhotos[bet.id]) {
+        this.betPhotos[bet.id] = [];
+      }
+      this.betPhotos[bet.id].push(created);
+    } catch (err) {
+      console.error('Fehler beim Speichern des Fotos', err);
+      alert('Foto konnte nicht gespeichert werden.');
+    }
+  }
+
+  getPhotosForBet(bet: Bet): BetPhoto[] {
+    return this.betPhotos[bet.id] ?? [];
+  }
+
+  hasGeoOnCreate(bet: Bet): boolean {
+    return !!bet.created_lat && !!bet.created_lng;
+  }
+
+  hasGeoOnCompletion(bet: Bet): boolean {
+    return !!bet.completed_lat && !!bet.completed_lng;
   }
 }
