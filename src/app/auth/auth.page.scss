@@ -1,19 +1,67 @@
+:host {
+  ion-content {
+    --background: #f7f8fa;
+  }
+}
+
+:host-context(body.dark) ion-content {
+  --background: #020617;
+}
+
 .auth-container {
-  height: 100%;
+  min-height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 16px;
+  padding: 24px 16px;
 }
 
 .auth-card {
   width: 100%;
   max-width: 420px;
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.18);
+}
+
+:host-context(body.dark) .auth-card {
+  background: #292929;
+  box-shadow: 0 22px 45px rgba(0, 0, 0, 0.7);
+}
+
+ion-card-header {
+  padding-bottom: 8px;
+}
+
+ion-card-title {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+ion-card-subtitle {
+  font-size: 13px;
+  opacity: 0.75;
+}
+
+ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  margin-top: 8px;
+}
+
+ion-label {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+ion-input,
+ion-textarea {
+  font-size: 14px;
 }
 
 .error-text {
   margin-top: 8px;
   font-size: 13px;
+  color: var(--ion-color-danger);
 }
 
 .submit-button {

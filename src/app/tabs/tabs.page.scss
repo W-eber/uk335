@@ -1,1 +1,13 @@
+ion-tab-bar {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
 
+body.dark ion-tab-bar {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+ion-tab-button {
+  text-transform: none;
+  font-size: 12px;
+  font-weight: 500;
+}

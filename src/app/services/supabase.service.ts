@@ -10,6 +10,7 @@ import { environment } from '../../environments/environment';
 export type BetStatus = 'open' | 'accepted' | 'completed' | 'cancelled';
 export type StakeType = 'money' | 'other' | null;
 export type WinnerStatus = 'none' | 'proposed' | 'confirmed' | 'rejected';
+export type CancelStatus = 'none' | 'proposed' | 'confirmed' | 'rejected';
 
 export interface Profile {
   id: string;
@@ -32,7 +33,6 @@ export interface Bet {
   status: BetStatus;
   created_at: string;
 
-  // Winner / Ergebnis
   winner_id?: string | null;
   winner_proposed_by?: string | null;
   winner_status?: WinnerStatus | null;
@@ -40,22 +40,26 @@ export interface Bet {
   winner_confirmed_at?: string | null;
   winner_confirmed_by?: string | null;
 
-  // Regel-Template
   rule_template_key?: string | null;
   rules_text?: string | null;
 
-  // Geolocation
   created_lat?: number | null;
   created_lng?: number | null;
   completed_lat?: number | null;
   completed_lng?: number | null;
+
+  cancel_status?: CancelStatus | null;
+  cancel_requested_by?: string | null;
+  cancel_confirmed_by?: string | null;
+  cancel_requested_at?: string | null;
+  cancel_confirmed_at?: string | null;
 }
 
 export interface BetPhoto {
   id: string;
   bet_id: string;
   user_id: string;
-  photo_url: string; // DataURL
+  photo_url: string;
   created_at: string;
   latitude: number | null;
   longitude: number | null;
@@ -139,7 +143,9 @@ export class SupabaseService {
 
     const email = (data as { email: string | null }).email;
     if (!email) {
-      throw new Error('Für diesen Username ist keine E-Mail hinterlegt.');
+      throw new Error(
+        'Für diesen Username ist keine E-Mail hinterlegt. Bitte mit E-Mail registrieren oder erneut versuchen.'
+      );
     }
 
     return this.signIn(email, password);
@@ -173,18 +179,20 @@ export class SupabaseService {
   }
 
   async searchProfilesByUsername(query: string): Promise<Profile[]> {
+    const trimmed = query.trim();
+    if (!trimmed) return [];
+
     const { data, error } = await this.supabase
       .from('profiles')
-      .select('id, username, email, is_adult, created_at')
-      .ilike('username', `${query}%`)
-      .order('username')
+      .select('*')
+      .ilike('username', `%${trimmed}%`)
       .limit(10);
 
     if (error) throw error;
     return (data ?? []) as Profile[];
   }
 
-  // ---------- Bets: Lesen ----------
+  // ---------- Bets ----------
 
   async listBets(): Promise<Bet[]> {
     const { data, error } = await this.supabase
@@ -207,8 +215,6 @@ export class SupabaseService {
     return data as Bet;
   }
 
-  // ---------- Bets: Erstellen ----------
-
   async createBet(payload: {
     title: string;
     description?: string | null;
@@ -224,10 +230,11 @@ export class SupabaseService {
   }): Promise<Bet> {
     const { data: userData, error: userError } =
       await this.supabase.auth.getUser();
+
     if (userError) throw userError;
 
     const user = userData.user;
-    if (!user) throw new Error('Nicht eingeloggt.');
+    if (!user) throw new Error('Kein eingeloggter Benutzer.');
 
     const { data, error } = await this.supabase
       .from('bets')
@@ -237,28 +244,23 @@ export class SupabaseService {
         description: payload.description ?? null,
         invited_username: payload.invitedUsername,
         stake_type: payload.stakeType,
-        stake_amount:
-          payload.stakeType === 'money' ? payload.stakeAmount ?? null : null,
-        stake_currency:
-          payload.stakeType === 'money'
-            ? payload.stakeCurrency?.trim() || null
-            : null,
+        stake_amount: payload.stakeAmount ?? null,
+        stake_currency: payload.stakeCurrency ?? null,
         stake_text: payload.stakeText ?? null,
         status: 'open',
         rule_template_key: payload.ruleTemplateKey,
         rules_text: payload.rulesText,
-        winner_status: 'none',
         created_lat: payload.createdLat ?? null,
         created_lng: payload.createdLng ?? null,
+        winner_status: 'none',
+        cancel_status: 'none',
       })
-      .select()
+      .select('*')
       .single();
 
     if (error) throw error;
     return data as Bet;
   }
-
-  // ---------- Bets: Akzeptieren ----------
 
   async acceptBet(betId: string): Promise<void> {
     const { error } = await this.supabase
@@ -269,17 +271,88 @@ export class SupabaseService {
     if (error) throw error;
   }
 
-  // ---------- Winner-Flow ----------
+  // ----- Abbruch mit Bestätigung -----
 
-  async proposeMeAsWinner(betId: string): Promise<void> {
-    const { data, error } = await this.supabase.auth.getUser();
-    if (error) throw error;
-    const user = data.user;
+  async requestCancelBet(betId: string): Promise<void> {
+    const user = await this.getUser();
     if (!user) throw new Error('Nicht eingeloggt.');
 
     const now = new Date().toISOString();
 
-    const { error: updateError } = await this.supabase
+    const { error } = await this.supabase
+      .from('bets')
+      .update({
+        cancel_status: 'proposed',
+        cancel_requested_by: user.id,
+        cancel_requested_at: now,
+        cancel_confirmed_by: null,
+        cancel_confirmed_at: null,
+      })
+      .eq('id', betId);
+
+    if (error) throw error;
+  }
+
+  async confirmCancelBet(betId: string): Promise<void> {
+    const user = await this.getUser();
+    if (!user) throw new Error('Nicht eingeloggt.');
+
+    const now = new Date().toISOString();
+
+    const { error } = await this.supabase
+      .from('bets')
+      .update({
+        cancel_status: 'confirmed',
+        cancel_confirmed_by: user.id,
+        cancel_confirmed_at: now,
+        status: 'cancelled',
+      })
+      .eq('id', betId);
+
+    if (error) throw error;
+  }
+
+  async rejectCancelBet(betId: string): Promise<void> {
+    const { error } = await this.supabase
+      .from('bets')
+      .update({
+        cancel_status: 'rejected',
+        cancel_requested_by: null,
+        cancel_requested_at: null,
+        cancel_confirmed_by: null,
+        cancel_confirmed_at: null,
+      })
+      .eq('id', betId);
+
+    if (error) throw error;
+  }
+
+  // Optional: echtes Löschen nach Cancel (nur wenn du es im UI nutzt)
+  async deleteBet(betId: string): Promise<void> {
+    const { error: photosError } = await this.supabase
+      .from('bet_photos')
+      .delete()
+      .eq('bet_id', betId);
+
+    if (photosError) throw photosError;
+
+    const { error } = await this.supabase
+      .from('bets')
+      .delete()
+      .eq('id', betId);
+
+    if (error) throw error;
+  }
+
+  // ----- Winner-Flow -----
+
+  async proposeMeAsWinner(betId: string): Promise<void> {
+    const user = await this.getUser();
+    if (!user) throw new Error('Nicht eingeloggt.');
+
+    const now = new Date().toISOString();
+
+    const { error } = await this.supabase
       .from('bets')
       .update({
         winner_id: user.id,
@@ -289,33 +362,31 @@ export class SupabaseService {
       })
       .eq('id', betId);
 
-    if (updateError) throw updateError;
+    if (error) throw error;
   }
 
   async confirmWinner(
     betId: string,
-    opts?: { lat?: number | null; lng?: number | null }
+    coords: { lat: number | null; lng: number | null }
   ): Promise<void> {
-    const { data, error } = await this.supabase.auth.getUser();
-    if (error) throw error;
-    const user = data.user;
+    const user = await this.getUser();
     if (!user) throw new Error('Nicht eingeloggt.');
 
     const now = new Date().toISOString();
 
-    const { error: updateError } = await this.supabase
+    const { error } = await this.supabase
       .from('bets')
       .update({
         winner_status: 'confirmed',
         status: 'completed',
-        completed_lat: opts?.lat ?? null,
-        completed_lng: opts?.lng ?? null,
+        completed_lat: coords.lat ?? null,
+        completed_lng: coords.lng ?? null,
         winner_confirmed_at: now,
         winner_confirmed_by: user.id,
       })
       .eq('id', betId);
 
-    if (updateError) throw updateError;
+    if (error) throw error;
   }
 
   async rejectWinnerProposal(betId: string): Promise<void> {
@@ -334,7 +405,7 @@ export class SupabaseService {
     if (error) throw error;
   }
 
-  // ---------- Bet-Photos ----------
+  // ---------- Bet-Fotos ----------
 
   async listBetPhotos(betId: string): Promise<BetPhoto[]> {
     const { data, error } = await this.supabase
@@ -350,14 +421,10 @@ export class SupabaseService {
   async addBetPhoto(params: {
     betId: string;
     imageDataUrl: string;
-    latitude?: number | null;
-    longitude?: number | null;
+    latitude: number | null;
+    longitude: number | null;
   }): Promise<BetPhoto> {
-    const { data: userData, error: userError } =
-      await this.supabase.auth.getUser();
-    if (userError) throw userError;
-
-    const user = userData.user;
+    const user = await this.getUser();
     if (!user) throw new Error('Nicht eingeloggt.');
 
     const { data, error } = await this.supabase
@@ -366,10 +433,10 @@ export class SupabaseService {
         bet_id: params.betId,
         user_id: user.id,
         photo_url: params.imageDataUrl,
-        latitude: params.latitude ?? null,
-        longitude: params.longitude ?? null,
+        latitude: params.latitude,
+        longitude: params.longitude,
       })
-      .select()
+      .select('*')
       .single();
 
     if (error) throw error;

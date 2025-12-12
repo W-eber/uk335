@@ -1,5 +1,17 @@
+:host {
+  ion-content {
+    --background: #f7f8fa;
+  }
+}
+
+:host-context(body.dark) ion-content {
+  --background: #020617;
+}
+
 .dashboard-container {
-  padding: 16px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 24px 16px 32px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -13,37 +25,34 @@
 }
 
 .page-title {
-  font-size: 24px;
-  font-weight: 600;
   margin: 0;
+  font-size: 24px;
+  font-weight: 700;
 }
 
 .page-subtitle {
+  margin: 4px 0 0;
   font-size: 13px;
   opacity: 0.7;
-  margin: 4px 0 0;
 }
 
 .state-container {
-  text-align: center;
-  opacity: 0.8;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
+  padding: 24px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+}
 
-  ion-spinner {
-    margin-bottom: 4px;
-  }
+:host-context(body.dark) .state-container {
+  background: rgba(15, 23, 42, 0.9);
+}
 
-  ion-icon {
-    font-size: 32px;
-    margin-bottom: 4px;
-  }
-
-  &.error {
-    opacity: 1;
-  }
+.state-container.error {
+  border: 1px solid rgba(239, 68, 68, 0.4);
 }
 
 .bets-list {
@@ -52,97 +61,93 @@
   gap: 12px;
 }
 
-.bet-card ion-card-header {
-  padding-bottom: 4px;
+.bet-card {
+  border-radius: 18px;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.16);
+  overflow: hidden;
+}
+
+:host-context(body.dark) .bet-card {
+  background: #292929;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
 }
 
 .bet-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 12px;
+}
 
-  h2 {
-    font-size: 18px;
-    margin: 0;
-  }
+.bet-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
 }
 
 .bet-creator {
+  margin: 4px 0 0;
   font-size: 12px;
   opacity: 0.7;
-  margin: 2px 0 0;
 }
 
 .bet-description {
-  margin-bottom: 6px;
+  margin-top: 8px;
+  font-size: 14px;
 }
 
 .bet-stake {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
-  margin-bottom: 4px;
-
-  ion-icon {
-    font-size: 18px;
-  }
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .bet-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  margin-top: 8px;
   font-size: 12px;
-  opacity: 0.7;
-  margin-bottom: 4px;
+  opacity: 0.75;
+
+  span + span::before {
+    content: "·";
+    margin: 0 4px;
+  }
 }
 
 .bet-extra-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  margin-top: 8px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.bet-geo {
+  margin-top: 4px;
   font-size: 11px;
-  opacity: 0.75;
-  margin-bottom: 4px;
-
-  .bet-geo {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-
-    ion-icon {
-      font-size: 14px;
-    }
-  }
+  opacity: 0.7;
 }
 
 .bet-footer-row {
+  margin-top: 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 4px;
+  gap: 8px;
+  font-size: 12px;
+}
 
-  .bet-photos-info {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-
-    ion-icon {
-      font-size: 16px;
-    }
-  }
+.bet-photos-info {
+  font-size: 11px;
+  opacity: 0.7;
 }
 
 .bet-actions {
-  margin-top: 8px;
+  margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
 .winner-confirm-actions {
+  margin-top: 8px;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

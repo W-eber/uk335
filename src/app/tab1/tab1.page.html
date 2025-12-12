@@ -14,7 +14,7 @@
       <div>
         <h1 class="page-title">Deine Wetten</h1>
         <p class="page-subtitle">
-          Schneller Überblick – Details und Verlauf durch Antippen einer Wette.
+          Übersicht über offene, laufende und abgeschlossene Wetten.
         </p>
       </div>
 
@@ -38,7 +38,6 @@
       class="state-container"
       *ngIf="!loading && !errorMessage && bets.length === 0"
     >
-      <ion-icon name="trophy-outline"></ion-icon>
       <p>Noch keine Wetten vorhanden.</p>
       <small>Lege eine neue Wette an, um loszulegen.</small>
     </div>
@@ -56,9 +55,7 @@
           <div class="bet-header">
             <div>
               <h2>{{ bet.title }}</h2>
-              <p class="bet-creator" *ngIf="isMyBet(bet)">
-                von dir erstellt
-              </p>
+              <p class="bet-creator" *ngIf="isMyBet(bet)">von dir erstellt</p>
             </div>
 
             <ion-badge
@@ -83,30 +80,15 @@
           </p>
 
           <div class="bet-stake">
-            <ion-icon
-              name="cash-outline"
-              *ngIf="bet.stake_type === 'money'"
-            ></ion-icon>
-            <ion-icon
-              name="document-text-outline"
-              *ngIf="bet.stake_type !== 'money'"
-            ></ion-icon>
-
-            <span
-              *ngIf="
-                bet.stake_type === 'money' && bet.stake_amount !== null
-              "
-            >
-              {{ bet.stake_amount }}
+            <span *ngIf="bet.stake_type === 'money' && bet.stake_amount !== null">
+              Einsatz: {{ bet.stake_amount }}
               <ng-container *ngIf="bet.stake_currency">
                 {{ bet.stake_currency }}
               </ng-container>
             </span>
 
-            <span
-              *ngIf="bet.stake_type === 'other' && bet.stake_text"
-            >
-              {{ bet.stake_text }}
+            <span *ngIf="bet.stake_type === 'other' && bet.stake_text">
+              Einsatz: {{ bet.stake_text }}
             </span>
           </div>
 
@@ -122,18 +104,15 @@
 
           <div class="bet-extra-row">
             <div class="bet-geo" *ngIf="hasGeoOnCreate(bet)">
-              <ion-icon name="location-outline"></ion-icon>
-              <span>Standort beim Erstellen gespeichert</span>
+              Standort beim Erstellen gespeichert
             </div>
             <div class="bet-geo" *ngIf="hasGeoOnCompletion(bet)">
-              <ion-icon name="flag-outline"></ion-icon>
-              <span>Standort beim Abschluss gespeichert</span>
+              Standort beim Abschluss gespeichert
             </div>
           </div>
 
           <div class="bet-footer-row">
             <div class="bet-photos-info">
-              <ion-icon name="camera-outline"></ion-icon>
               <span>
                 {{ getPhotosForBet(bet).length }} Foto
                 {{
@@ -153,6 +132,7 @@
           </div>
 
           <div class="bet-actions">
+            <!-- Einladung annehmen -->
             <ion-button
               size="small"
               (click)="acceptBet(bet); $event.stopPropagation()"
@@ -161,6 +141,7 @@
               Wette akzeptieren
             </ion-button>
 
+            <!-- Gewinner vorschlagen -->
             <ion-button
               size="small"
               fill="outline"
@@ -170,6 +151,7 @@
               Ich habe gewonnen
             </ion-button>
 
+            <!-- Gewinner bestätigen / ablehnen -->
             <div
               class="winner-confirm-actions"
               *ngIf="canConfirmWinner(bet)"
@@ -190,6 +172,58 @@
                 Vorschlag ablehnen
               </ion-button>
             </div>
+
+            <!-- Abbruch anfragen -->
+            <ion-button
+              size="small"
+              color="medium"
+              fill="outline"
+              (click)="requestCancel(bet); $event.stopPropagation()"
+              *ngIf="canRequestCancel(bet)"
+            >
+              Abbruch anfragen
+            </ion-button>
+
+            <!-- Abbruch aus Sicht Anfragender -->
+            <div
+              class="cancel-info"
+              *ngIf="isCancelRequestedByMe(bet)"
+            >
+              <small>Abbruch angefragt – wartet auf Bestätigung.</small>
+            </div>
+
+            <!-- Abbruch bestätigen / ablehnen -->
+            <div
+              class="cancel-actions"
+              *ngIf="canRespondToCancel(bet)"
+            >
+              <ion-button
+                size="small"
+                color="medium"
+                (click)="confirmCancel(bet); $event.stopPropagation()"
+              >
+                Abbruch bestätigen
+              </ion-button>
+              <ion-button
+                size="small"
+                color="light"
+                fill="outline"
+                (click)="rejectCancel(bet); $event.stopPropagation()"
+              >
+                Abbruch ablehnen
+              </ion-button>
+            </div>
+
+            <!-- Endgültig löschen (nur nach cancel) -->
+            <ion-button
+              size="small"
+              color="danger"
+              fill="outline"
+              (click)="deleteBet(bet); $event.stopPropagation()"
+              *ngIf="canDeleteBet(bet)"
+            >
+              Löschen
+            </ion-button>
           </div>
         </ion-card-content>
       </ion-card>

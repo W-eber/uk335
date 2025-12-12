@@ -14,7 +14,9 @@
       </ion-card-header>
 
       <ion-card-content>
-        <form (ngSubmit)="onSubmit()">
+        <form
+          (ngSubmit)="mode === 'login' ? handleLogin() : handleRegister()"
+        >
           <!-- LOGIN -->
           <ng-container *ngIf="mode === 'login'; else registerForm">
             <ion-item>
@@ -39,7 +41,7 @@
             </ion-item>
           </ng-container>
 
-          <!-- REGISTRATION -->
+          <!-- REGISTER -->
           <ng-template #registerForm>
             <ion-item>
               <ion-label position="stacked">E-Mail</ion-label>
@@ -76,23 +78,28 @@
           </ion-text>
 
           <ion-button
+            class="submit-button"
             expand="block"
             type="submit"
             [disabled]="loading"
-            class="submit-button"
           >
-            {{ mode === 'login' ? 'Einloggen' : 'Registrieren' }}
+            <ng-container *ngIf="!loading">
+              {{ mode === 'login' ? 'Einloggen' : 'Registrieren' }}
+            </ng-container>
+            <ng-container *ngIf="loading">
+              <ion-spinner name="crescent"></ion-spinner>
+            </ng-container>
           </ion-button>
         </form>
 
         <div class="auth-switch">
           <ng-container *ngIf="mode === 'login'; else switchToLogin">
             <span>Noch kein Konto?</span>
-            <a (click)="setMode('register')">Jetzt registrieren</a>
+            <a (click)="switchMode('register')">Jetzt registrieren</a>
           </ng-container>
           <ng-template #switchToLogin>
             <span>Schon ein Konto?</span>
-            <a (click)="setMode('login')">Jetzt einloggen</a>
+            <a (click)="switchMode('login')">Jetzt einloggen</a>
           </ng-template>
         </div>
       </ion-card-content>

@@ -1,0 +1,47 @@
+.settings-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.page-subtitle {
+  font-size: 13px;
+  opacity: 0.8;
+  margin: 4px 0 12px;
+}
+
+.settings-list {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+ion-item {
+  --background: transparent;
+}
+
+.account-card {
+  margin-top: 8px;
+  border-radius: 16px;
+}
+
+.logout-button {
+  margin-top: 16px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.loading-hint {
+  margin-top: 8px;
+  font-size: 13px;
+  text-align: center;
+  opacity: 0.75;
+}

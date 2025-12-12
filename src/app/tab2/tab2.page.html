@@ -6,127 +6,166 @@
 
 <ion-content>
   <div class="page-container">
-    <h1 class="page-title">SetBet – Wette erstellen</h1>
+    <h1 class="page-title">SetBet - Wette erstellen</h1>
     <p class="page-subtitle">
       Definiere Einsatz, Mitspieler und Regeln klar und nachvollziehbar.
     </p>
 
+    <!-- Basisdaten der Wette -->
     <ion-list lines="full">
       <ion-item>
-        <ion-label position="stacked">Titel der Wette</ion-label>
+        <ion-label position="stacked">Titel der Wette *</ion-label>
         <ion-input
           [(ngModel)]="title"
-          placeholder="z.B. Challenge im Sport, Spiel oder Alltag"
+          name="title"
+          placeholder="z.B. Best-of-3 im Game, Laufe 5km schneller als du"
         ></ion-input>
       </ion-item>
 
       <ion-item>
         <ion-label position="stacked">Beschreibung (optional)</ion-label>
         <ion-textarea
-          auto-grow="true"
+          autoGrow="true"
           [(ngModel)]="description"
+          name="description"
           placeholder="Kurz beschreiben, worum es bei der Wette geht."
         ></ion-textarea>
       </ion-item>
 
+      <!-- Mitspieler / Gegenseite suchen -->
       <ion-item>
-        <ion-label position="stacked">Mitspieler (Username)</ion-label>
+        <ion-label position="stacked">Mitspieler (@Username, optional)</ion-label>
         <ion-input
           [(ngModel)]="invitedSearch"
+          name="invitedSearch"
+          placeholder="@username"
           (ionInput)="onInvitedSearchChange($event)"
-          placeholder="Username der anderen Person"
         ></ion-input>
       </ion-item>
+    </ion-list>
 
+    <!-- Vorschläge aus der Profil-Suche -->
+    <ion-list
+      *ngIf="invitedSuggestions.length > 0"
+      class="suggestions-list"
+    >
       <ion-item
         button
         detail="false"
         *ngFor="let p of invitedSuggestions"
         (click)="selectInvitedUser(p)"
       >
-        <ion-label>{{ p.username }}</ion-label>
-      </ion-item>
-
-      <ion-item>
-        <ion-label position="stacked">Einsatz</ion-label>
-        <ion-radio-group [(ngModel)]="stakeType">
-          <ion-item lines="none">
-            <ion-label>Geldbetrag</ion-label>
-            <ion-radio slot="start" value="money"></ion-radio>
-          </ion-item>
-          <ion-item lines="none">
-            <ion-label>Andere Gegenleistung</ion-label>
-            <ion-radio slot="start" value="other"></ion-radio>
-          </ion-item>
-        </ion-radio-group>
-      </ion-item>
-
-      <ng-container *ngIf="stakeType === 'money'">
-        <ion-item>
-          <ion-label position="stacked">Betrag</ion-label>
-          <ion-input
-            type="number"
-            [(ngModel)]="stakeAmount"
-            placeholder="z.B. 20"
-          ></ion-input>
-        </ion-item>
-        <ion-item>
-          <ion-label position="stacked">Währung</ion-label>
-          <ion-input
-            [(ngModel)]="stakeCurrency"
-            placeholder="z.B. CHF, EUR"
-          ></ion-input>
-        </ion-item>
-      </ng-container>
-
-      <ng-container *ngIf="stakeType === 'other'">
-        <ion-item>
-          <ion-label position="stacked">Beschreibung des Einsatzes</ion-label>
-          <ion-textarea
-            auto-grow="true"
-            [(ngModel)]="stakeText"
-            placeholder="z.B. Essen ausgeben, bestimmte Aufgabe erledigen…"
-          ></ion-textarea>
-        </ion-item>
-      </ng-container>
-
-      <ion-item>
-        <ion-label position="stacked">Regel-Template</ion-label>
-        <ion-select
-          [(ngModel)]="selectedRuleKey"
-          (ionChange)="onRuleTemplateChange($event)"
-        >
-          <ion-select-option
-            *ngFor="let t of ruleTemplates"
-            [value]="t.key"
-          >
-            {{ t.title }}
-          </ion-select-option>
-        </ion-select>
+        <ion-label>
+          <div class="suggest-username">@{{ p.username }}</div>
+          <div class="suggest-email" *ngIf="p.email">
+            {{ p.email }}
+          </div>
+        </ion-label>
       </ion-item>
     </ion-list>
 
-    <div class="rules-preview">
-      <h2>Regeln (Vorschlag)</h2>
-      <pre>{{ selectedRuleText }}</pre>
-    </div>
+    <!-- Einsatz -->
+    <ion-list lines="full">
+      <ion-item lines="none">
+        <ion-label position="stacked">Art des Einsatzes *</ion-label>
+        <div class="stake-type-options">
+          <div
+            class="stake-option"
+            [class.active]="stakeType === 'money'"
+            (click)="stakeType = 'money'"
+          >
+            <div class="stake-option-title">Geldbetrag</div>
+            <div class="stake-option-subtitle">
+              Fester Betrag in einer Währung
+            </div>
+          </div>
+          <div
+            class="stake-option"
+            [class.active]="stakeType === 'other'"
+            (click)="stakeType = 'other'"
+          >
+            <div class="stake-option-title">Anderes / Custom</div>
+            <div class="stake-option-subtitle">
+              Beliebige Leistung oder Verpflichtung
+            </div>
+          </div>
+        </div>
+      </ion-item>
 
+      <!-- Geld: Betrag + Währung -->
+      <ion-item *ngIf="stakeType === 'money'">
+        <ion-label position="stacked">Betrag &amp; Währung *</ion-label>
+        <div class="money-row">
+          <ion-input
+            type="number"
+            [(ngModel)]="stakeAmount"
+            name="stakeAmount"
+            placeholder="z.B. 50"
+          ></ion-input>
+          <ion-input
+            [(ngModel)]="stakeCurrency"
+            name="stakeCurrency"
+            placeholder="z.B. CHF"
+          ></ion-input>
+        </div>
+      </ion-item>
+
+      <!-- Other: Textbeschreibung -->
+      <ion-item *ngIf="stakeType === 'other'">
+        <ion-label position="stacked">Einsatz / Verpflichtung *</ion-label>
+        <ion-textarea
+          [(ngModel)]="stakeText"
+          name="stakeText"
+          autoGrow="true"
+          placeholder="z.B. Verlierer muss ein Abendessen zahlen."
+        ></ion-textarea>
+      </ion-item>
+
+      <!-- Regel-Template Auswahl -->
+      <ion-item>
+        <ion-label position="stacked">Regel-Template *</ion-label>
+        <ion-select
+          [(ngModel)]="selectedRuleKey"
+          name="ruleTemplate"
+          interface="popover"
+          (ionChange)="onRuleTemplateChange($event)"
+        >
+          <ion-select-option
+            *ngFor="let tpl of ruleTemplates"
+            [value]="tpl.key"
+          >
+            {{ tpl.title }}
+          </ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Vorschau der Regeln -->
+      <ion-item lines="none">
+        <ion-label class="rules-preview">
+          <p>{{ selectedRuleText }}</p>
+        </ion-label>
+      </ion-item>
+    </ion-list>
+
+    <!-- Feedback-Messages -->
     <div class="messages">
       <ion-text color="danger" *ngIf="errorMessage">
-        <p>{{ errorMessage }}</p>
+        <p class="error-text">{{ errorMessage }}</p>
       </ion-text>
+
       <ion-text color="success" *ngIf="successMessage">
-        <p>{{ successMessage }}</p>
+        <p class="success-text">{{ successMessage }}</p>
       </ion-text>
     </div>
 
+    <!-- Submit-Button -->
     <ion-button
       expand="block"
       (click)="createBet()"
       [disabled]="loading"
+      class="submit-button"
     >
-      <ion-spinner slot="start" *ngIf="loading"></ion-spinner>
-      Wette erstellen
+      {{ loading ? 'Wette wird gespeichert…' : 'Wette erstellen' }}
     </ion-button>
   </div>
 </ion-content>

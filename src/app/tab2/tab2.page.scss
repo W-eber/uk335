@@ -13,31 +13,118 @@
 
 .page-subtitle {
   font-size: 13px;
-  opacity: 0.7;
-  margin: 4px 0 0;
+  opacity: 0.8;
+  margin: 4px 0 12px;
 }
 
-.rules-preview {
+ion-list {
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.06);
+  backdrop-filter: blur(8px);
+}
+
+ion-item {
+  --background: transparent;
+}
+
+/* Vorschlagsliste für Usernames */
+.suggestions-list {
+  margin-top: 4px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.suggest-username {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.suggest-email {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Einsatz-Typ als zwei „Tiles“ */
+.stake-type-options {
+  display: flex;
+  gap: 8px;
   margin-top: 8px;
+}
 
-  h2 {
-    font-size: 15px;
-    margin-bottom: 4px;
+.stake-option {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: rgba(15, 23, 42, 0.02);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background-color 0.12s ease,
+    transform 0.08s ease;
+}
+
+.stake-option:hover {
+  transform: translateY(-1px);
+}
+
+.stake-option.active {
+  border-color: var(--ion-color-primary);
+  background: rgba(59, 130, 246, 0.06);
+}
+
+.stake-option-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.stake-option-subtitle {
+  font-size: 12px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+
+/* Geld-Einsatz: Betrag + Währung nebeneinander */
+.money-row {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+
+  ion-input {
+    flex: 1;
   }
+}
 
-  pre {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 8px;
-    padding: 8px;
+/* Regel-Preview */
+.rules-preview {
+  p {
     font-size: 12px;
     white-space: pre-wrap;
+    opacity: 0.85;
   }
 }
 
+/* Feedback-Messages */
 .messages {
   min-height: 24px;
+  margin-top: 4px;
 
   p {
-    margin: 4px 0;
+    margin: 2px 0;
   }
+}
+
+.error-text {
+  font-size: 13px;
+}
+
+.success-text {
+  font-size: 13px;
+}
+
+/* Call-to-Action Button */
+.submit-button {
+  margin-top: 8px;
+  border-radius: 999px;
+  font-weight: 600;
 }

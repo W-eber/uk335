@@ -5,31 +5,52 @@
 </ion-header>
 
 <ion-content>
-  <div class="ion-padding">
-    <ion-list>
+  <div class="settings-container">
+    <h1 class="page-title">Einstellungen</h1>
+    <p class="page-subtitle">
+      Theme anpassen, Konto einsehen und bei Bedarf abmelden.
+    </p>
+
+    <!-- Dark-Mode Toggle -->
+    <ion-list class="settings-list">
       <ion-item>
         <ion-label>Dark Mode</ion-label>
         <ion-toggle
           [(ngModel)]="isDarkMode"
-          (ionChange)="onDarkModeToggle()">
-        </ion-toggle>
+          (ionChange)="onDarkModeToggle()"
+        ></ion-toggle>
       </ion-item>
     </ion-list>
 
-    <ion-card *ngIf="userEmail || username">
+    <!-- Konto-Infos -->
+    <ion-card *ngIf="userEmail || username" class="account-card">
       <ion-card-header>
         <ion-card-title>Konto</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <p *ngIf="username">Benutzername: <strong>{{ username }}</strong></p>
-        <p *ngIf="userEmail">E-Mail: <strong>{{ userEmail }}</strong></p>
+        <p *ngIf="username">
+          Benutzername:
+          <strong>{{ username }}</strong>
+        </p>
+        <p *ngIf="userEmail">
+          E-Mail:
+          <strong>{{ userEmail }}</strong>
+        </p>
       </ion-card-content>
     </ion-card>
 
-    <ion-button expand="block" color="medium" (click)="logout()">
+    <!-- Logout -->
+    <ion-button
+      expand="block"
+      color="medium"
+      (click)="logout()"
+      class="logout-button"
+    >
       Logout
     </ion-button>
 
-    <p *ngIf="loading">Einstellungen werden geladen...</p>
+    <p *ngIf="loading" class="loading-hint">
+      Einstellungen werden geladen...
+    </p>
   </div>
 </ion-content>
