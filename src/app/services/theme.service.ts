@@ -13,24 +13,41 @@ export class ThemeService {
     return this._isDark;
   }
 
-  async loadTheme() {
-    const { value } = await Preferences.get({ key: THEME_KEY });
-    this._isDark = value === 'true';
-    document.body.classList.toggle('dark', this._isDark);
+  async loadTheme(): Promise<boolean> {
+    try {
+      const { value } = await Preferences.get({ key: THEME_KEY });
+      const enabled = value === 'true';
+      this._isDark = enabled;
+      document.body.classList.toggle('dark', enabled);
+      return enabled;
+    } catch (err) {
+      console.error('Error loading theme from Preferences', err);
+      this._isDark = false;
+      document.body.classList.remove('dark');
+      return false;
+    }
   }
 
-  async setDarkMode(enabled: boolean) {
+  async setDarkMode(enabled: boolean): Promise<void> {
     this._isDark = enabled;
     document.body.classList.toggle('dark', enabled);
-    await Preferences.set({
-      key: THEME_KEY,
-      value: enabled ? 'true' : 'false',
-    });
+    try {
+      await Preferences.set({
+        key: THEME_KEY,
+        value: enabled ? 'true' : 'false',
+      });
+    } catch (err) {
+      console.error('Error saving theme to Preferences', err);
+    }
   }
 
-  async clearTheme() {
+  async clearTheme(): Promise<void> {
     this._isDark = false;
     document.body.classList.remove('dark');
-    await Preferences.remove({ key: THEME_KEY });
+    try {
+      await Preferences.remove({ key: THEME_KEY });
+    } catch (err) {
+      console.error('Error clearing theme from Preferences', err);
+    }
   }
 }

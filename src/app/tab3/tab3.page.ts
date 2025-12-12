@@ -1,7 +1,22 @@
 import { Component, OnInit } from '@angular/core';
-import { IonicModule } from '@ionic/angular';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import {
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonToggle,
+  IonButton,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonText,
+} from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
 import { SupabaseService } from '../services/supabase.service';
 import { ThemeService } from '../services/theme.service';
@@ -11,37 +26,51 @@ import { ThemeService } from '../services/theme.service';
   templateUrl: 'tab3.page.html',
   styleUrls: ['tab3.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule,
+    IonHeader,
+    IonToolbar,
+    IonTitle,
+    IonContent,
+    IonList,
+    IonItem,
+    IonLabel,
+    IonToggle,
+    IonButton,
+    IonCard,
+    IonCardHeader,
+    IonCardTitle,
+    IonCardContent,
+    IonText,
+  ],
 })
 export class Tab3Page implements OnInit {
   isDarkMode = false;
+  username: string | null = null;
+  userEmail: string | null = null;
   loading = true;
-  userEmail = '';
-  username = '';
 
   constructor(
-    private router: Router,
     private supabaseService: SupabaseService,
-    private themeService: ThemeService
+    private themeService: ThemeService,
+    private router: Router
   ) {}
 
   async ngOnInit() {
-    // Theme laden
-    await this.themeService.loadTheme();
-    this.isDarkMode = this.themeService.isDark;
-
-    // User + Profil laden
+    this.loading = true;
     try {
-      const user = await this.supabaseService.getUser();
-      this.userEmail = user?.email ?? '';
+      const enabled = await this.themeService.loadTheme();
+      this.isDarkMode = enabled;
 
       const profile = await this.supabaseService.getProfile();
-      this.username = profile?.username ?? '';
+      this.username = profile?.username ?? null;
+      this.userEmail = profile?.email ?? null;
     } catch (err) {
-      console.error('Error loading user/profile', err);
+      console.error('Error loading settings', err);
+    } finally {
+      this.loading = false;
     }
-
-    this.loading = false;
   }
 
   async onDarkModeToggle() {
@@ -56,7 +85,6 @@ export class Tab3Page implements OnInit {
     }
 
     await this.themeService.clearTheme();
-
     this.router.navigateByUrl('/auth', { replaceUrl: true });
   }
 }

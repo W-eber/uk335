@@ -77,24 +77,33 @@ export class Tab2Page implements OnInit {
     this.ruleTemplates = [
       {
         key: 'standard',
-        title: 'Standard – private Wette',
-        text:
-          'Beide Parteien sind volljährig und treten die Wette in gegenseitigem Einverständnis an. ' +
-          'Der Einsatz wird fällig, sobald der Gewinner bestätigt wurde.',
+        title: 'Standard – private Wette mit Volljährigkeit',
+        text: [
+          '1. Beide Parteien bestätigen, zum Zeitpunkt der Wette volljährig zu sein und die Wette aus freien Stücken einzugehen.',
+          '2. Die Parteien verfügen gegenseitig über Kontaktmöglichkeiten ausserhalb der App (z.B. Telefonnummer, Messenger, E-Mail).',
+          '3. Der Einsatz wird fällig, sobald der Gewinner in der App bestätigt wurde. Die Abwicklung des Einsatzes erfolgt direkt zwischen den Parteien.',
+          '4. SetBet stellt nur die Dokumentation der Wette (Bedingungen, Fotos, Zeitpunkte) bereit und übernimmt keine Rechtsberatung oder Inkasso.',
+        ].join('\n'),
       },
       {
-        key: 'gaming',
-        title: 'Gaming / Online-Match',
-        text:
-          'Die Wette bezieht sich auf ein Online-Spiel oder Turnier. ' +
-          'Abgebrochene Matches oder technische Probleme werden im Zweifel wiederholt.',
+        key: 'money-strong',
+        title: 'Geldwette – klare Zahlungspflicht',
+        text: [
+          '1. Der Einsatz besteht aus einem konkret vereinbarten Geldbetrag in einer definierten Währung.',
+          '2. Die unterlegene Partei verpflichtet sich, den Einsatz innert angemessener Frist nach Bestätigung des Gewinners zu bezahlen.',
+          '3. Können sich die Parteien über die Zahlungsart nicht einigen, wird eine übliche und zumutbare Zahlungsmethode verwendet (z.B. Banküberweisung, Twint, Bargeld).',
+          '4. Die App kann im Streitfall als Nachweis für die getroffenen Abmachungen dienen, ersetzt jedoch keine rechtliche Beratung.',
+        ].join('\n'),
       },
       {
         key: 'challenge',
-        title: 'Challenge / Alltag',
-        text:
-          'Die Wette bezieht sich auf eine Alltags-Challenge (z.B. Sport, Projekte etc.). ' +
-          'Beweisfotos sollen wenn möglich vor und nach der Challenge aufgenommen werden.',
+        title: 'Challenge / Alltag – mit Foto-Nachweisen',
+        text: [
+          '1. Die Wette bezieht sich auf eine Challenge im Alltag (z.B. Sportleistung, Projektabschluss, Alltagsaufgabe).',
+          '2. Vor und nach der Challenge sollen möglichst Fotos als Beweis hochgeladen werden, damit der Verlauf nachvollziehbar bleibt.',
+          '3. Kommt es zu Uneinigkeit über das Ergebnis, einigen sich die Parteien nach Möglichkeit gütlich unter Berücksichtigung der in der App gespeicherten Fotos und Daten.',
+          '4. Die Wette darf keine gefährlichen oder illegalen Handlungen verlangen. Jede Partei bleibt selbst verantwortlich für ihr Verhalten.',
+        ].join('\n'),
       },
     ];
 
@@ -204,9 +213,7 @@ export class Tab2Page implements OnInit {
     }
 
     try {
-      const invitedUsername = this.invitedSearch
-        .replace(/^@/, '')
-        .trim();
+      const invitedUsername = this.invitedSearch.replace(/^@/, '').trim();
 
       await this.supabaseService.createBet({
         title: this.title.trim(),
