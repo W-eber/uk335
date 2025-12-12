@@ -1,27 +1,27 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import {
-  IonContent,
   IonHeader,
-  IonTitle,
   IonToolbar,
+  IonTitle,
+  IonContent,
   IonList,
   IonItem,
   IonLabel,
   IonInput,
   IonTextarea,
-  IonRadioGroup,
-  IonRadio,
   IonButton,
   IonText,
   IonSelect,
   IonSelectOption,
-  IonSpinner,
 } from '@ionic/angular/standalone';
-import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { Geolocation } from '@capacitor/geolocation';
-import { SupabaseService, Profile } from '../services/supabase.service';
+import {
+  SupabaseService,
+  StakeType,
+  Profile,
+} from '../services/supabase.service';
 
 interface RuleTemplate {
   key: string;
@@ -31,170 +31,171 @@ interface RuleTemplate {
 
 @Component({
   selector: 'app-tab2',
-  templateUrl: 'tab2.page.html',
-  styleUrls: ['tab2.page.scss'],
+  templateUrl: './tab2.page.html',
+  styleUrls: ['./tab2.page.scss'],
   standalone: true,
   imports: [
     CommonModule,
     FormsModule,
-    IonContent,
     IonHeader,
-    IonTitle,
     IonToolbar,
+    IonTitle,
+    IonContent,
     IonList,
     IonItem,
     IonLabel,
     IonInput,
     IonTextarea,
-    IonRadioGroup,
-    IonRadio,
     IonButton,
     IonText,
     IonSelect,
     IonSelectOption,
-    IonSpinner,
   ],
 })
-export class Tab2Page {
+export class Tab2Page implements OnInit {
   title = '';
   description = '';
-
   invitedSearch = '';
   invitedSuggestions: Profile[] = [];
-  invitedSelectedUsername: string | null = null;
 
-  stakeType: 'money' | 'other' = 'money';
+  stakeType: StakeType = null;
   stakeAmount: number | null = null;
   stakeCurrency = '';
   stakeText = '';
 
-  ruleTemplates: RuleTemplate[] = [
-    {
-      key: 'standard',
-      title: 'Standard – private Kontaktdaten vorhanden',
-      text: [
-        '1. Beide Parteien bestätigen beim Akzeptieren dieser Wette, dass sie die privaten Kontaktdaten (Name, Zahlungsinformationen) der jeweils anderen Person ausserhalb der App besitzen.',
-        '2. Die Auszahlung des vereinbarten Betrags oder die Erfüllung des Einsatzes erfolgt direkt zwischen den Parteien ohne Beteiligung von SetBet.',
-        '3. SetBet dient ausschliesslich als neutrale Plattform zur Dokumentation der Abmachung (Zeitpunkt, Bedingungen, Status) und übernimmt keine Inkasso- oder Rechtsdienstleistungen.',
-      ].join('\n'),
-    },
-    {
-      key: 'money-strong',
-      title: 'Geldwette – klare Zahlungspflicht',
-      text: [
-        '1. Beide Parteien verpflichten sich, im Falle einer Niederlage den vereinbarten Geldbetrag vollständig und ohne unnötige Verzögerung zu bezahlen.',
-        '2. Die Parteien bestätigen, dass sie die nötigen Zahlungsinformationen der Gegenseite besitzen (z.B. IBAN, TWINT, PayPal o.ä.).',
-        '3. Kommt eine Partei ihrer Zahlungsverpflichtung nicht nach, besteht der Anspruch der Gewinner-Partei weiter – auch ausserhalb der App und auf zivilrechtlichem Weg.',
-        '4. SetBet dokumentiert nur die Abmachung und den Status, übernimmt aber keine Garantie für tatsächliche Zahlung oder Rechtsdurchsetzung.',
-      ].join('\n'),
-    },
-    {
-      key: 'honor',
-      title: 'Ehrenwette – Challenge oder Handlung',
-      text: [
-        '1. Gegenstand der Wette ist primär eine Handlung oder Challenge (z.B. Aufgabe, Dienstleistung, öffentliches Einlösen einer Strafe).',
-        '2. Beide Parteien bestätigen, dass sie die vereinbarte Handlung im Falle einer Niederlage ernst nehmen und nach bestem Wissen erfüllen.',
-        '3. Allfällige Nebenabmachungen (z.B. kleiner Betrag, Essen ausgeben) werden im Beschreibungstext der Wette oder im Einsatz-Feld festgehalten.',
-        '4. SetBet speichert die Abmachung und den Status, übernimmt aber keine Verantwortung dafür, ob die Handlung tatsächlich ausgeführt wird.',
-      ].join('\n'),
-    },
-  ];
+  ruleTemplates: RuleTemplate[] = [];
+  selectedRuleKey = '';
+  selectedRuleText = '';
 
-  selectedRuleKey: string = this.ruleTemplates[0].key;
-  selectedRuleText: string = this.ruleTemplates[0].text;
-
-  loading = false;
   errorMessage = '';
   successMessage = '';
+  loading = false;
 
-  constructor(
-    private supabaseService: SupabaseService,
-    private router: Router
-  ) {}
+  constructor(private supabaseService: SupabaseService) {}
 
-  async onInvitedSearchChange(ev: any) {
-    const value = ev.detail?.value ?? '';
-    this.invitedSearch = value.toString();
-    this.invitedSelectedUsername = null;
+  ngOnInit() {
+    this.ruleTemplates = [
+      {
+        key: 'standard',
+        title: 'Standard – private Wette',
+        text:
+          'Beide Parteien sind volljährig und treten die Wette in gegenseitigem Einverständnis an. ' +
+          'Der Einsatz wird fällig, sobald der Gewinner bestätigt wurde.',
+      },
+      {
+        key: 'gaming',
+        title: 'Gaming / Online-Match',
+        text:
+          'Die Wette bezieht sich auf ein Online-Spiel oder Turnier. ' +
+          'Abgebrochene Matches oder technische Probleme werden im Zweifel wiederholt.',
+      },
+      {
+        key: 'challenge',
+        title: 'Challenge / Alltag',
+        text:
+          'Die Wette bezieht sich auf eine Alltags-Challenge (z.B. Sport, Projekte etc.). ' +
+          'Beweisfotos sollen wenn möglich vor und nach der Challenge aufgenommen werden.',
+      },
+    ];
+
+    if (this.ruleTemplates.length > 0) {
+      this.selectedRuleKey = this.ruleTemplates[0].key;
+      this.selectedRuleText = this.ruleTemplates[0].text;
+    }
+  }
+
+  onRuleTemplateChange(event: any) {
+    const key = event.detail?.value ?? '';
+    this.selectedRuleKey = key;
+    const tpl = this.ruleTemplates.find((t) => t.key === key);
+    this.selectedRuleText = tpl ? tpl.text : '';
+  }
+
+  async onInvitedSearchChange(event: any) {
+    const value = event.detail?.value ?? '';
+    this.invitedSearch = value;
     this.invitedSuggestions = [];
-    this.errorMessage = '';
 
-    const term = this.invitedSearch.trim();
-    if (term.length < 2) return;
+    const trimmed = value.replace(/^@/, '').trim();
+    if (!trimmed) {
+      return;
+    }
 
     try {
       this.invitedSuggestions =
-        await this.supabaseService.searchProfilesByUsername(term);
+        await this.supabaseService.searchProfilesByUsername(trimmed);
     } catch (err) {
-      console.error('Error searching profiles', err);
+      console.error('Fehler bei der Profilsuche', err);
     }
   }
 
-  selectInvitedUser(p: Profile) {
-    this.invitedSearch = p.username;
-    this.invitedSelectedUsername = p.username;
+  selectInvitedUser(profile: Profile) {
+    this.invitedSearch = `@${profile.username}`;
     this.invitedSuggestions = [];
   }
 
-  onRuleTemplateChange(ev: any) {
-    const key = ev.detail?.value ?? this.selectedRuleKey;
-    const tpl = this.ruleTemplates.find((t) => t.key === key);
-    if (tpl) {
-      this.selectedRuleKey = tpl.key;
-      this.selectedRuleText = tpl.text;
+  private validateForm(): boolean {
+    const title = this.title.trim();
+    const stakeType = this.stakeType;
+
+    if (!title) {
+      this.errorMessage = 'Bitte einen Titel für die Wette eingeben.';
+      return false;
     }
+
+    if (!stakeType) {
+      this.errorMessage = 'Bitte eine Art des Einsatzes auswählen.';
+      return false;
+    }
+
+    if (stakeType === 'money') {
+      if (this.stakeAmount === null || this.stakeAmount <= 0) {
+        this.errorMessage = 'Bitte einen gültigen Geldbetrag eingeben.';
+        return false;
+      }
+      if (!this.stakeCurrency.trim()) {
+        this.errorMessage = 'Bitte eine Währung für den Einsatz angeben.';
+        return false;
+      }
+    }
+
+    if (stakeType === 'other') {
+      if (!this.stakeText.trim()) {
+        this.errorMessage =
+          'Bitte den Einsatz / die Verpflichtung in eigenen Worten beschreiben.';
+        return false;
+      }
+    }
+
+    if (!this.selectedRuleKey) {
+      this.errorMessage = 'Bitte ein Regel-Template auswählen.';
+      return false;
+    }
+
+    this.errorMessage = '';
+    return true;
   }
 
   async createBet() {
+    if (this.loading) return;
+
     this.errorMessage = '';
     this.successMessage = '';
 
-    if (!this.title.trim()) {
-      this.errorMessage = 'Bitte einen Titel für die Wette angeben.';
-      return;
-    }
-
-    const invitedTrimmed = this.invitedSearch.trim();
-    if (!invitedTrimmed) {
-      this.errorMessage = 'Bitte einen Mitspieler per Username auswählen.';
-      return;
-    }
-    if (
-      !this.invitedSelectedUsername ||
-      this.invitedSelectedUsername !== invitedTrimmed
-    ) {
-      this.errorMessage =
-        'Bitte einen existierenden Benutzer aus der Vorschlagsliste auswählen.';
-      return;
-    }
-    const invitedUsername = this.invitedSelectedUsername;
-
-    if (this.stakeType === 'money') {
-      if (!this.stakeAmount || this.stakeAmount <= 0) {
-        this.errorMessage = 'Bitte einen gültigen Geldbetrag angeben.';
-        return;
-      }
-      if (!this.stakeCurrency.trim()) {
-        this.errorMessage = 'Bitte eine Währung angeben (z.B. CHF, EUR).';
-        return;
-      }
-    }
-
-    if (this.stakeType === 'other' && !this.stakeText.trim()) {
-      this.errorMessage = 'Bitte den Einsatz/Verpflichtung beschreiben.';
+    if (!this.validateForm()) {
       return;
     }
 
     this.loading = true;
 
-    let createdLat: number | null = null;
-    let createdLng: number | null = null;
+    let lat: number | null = null;
+    let lng: number | null = null;
 
     try {
       await Geolocation.requestPermissions();
       const pos = await Geolocation.getCurrentPosition();
-      createdLat = pos.coords.latitude;
-      createdLng = pos.coords.longitude;
+      lat = pos.coords.latitude;
+      lng = pos.coords.longitude;
     } catch (geoErr) {
       console.warn(
         'Geolocation beim Erstellen der Wette nicht verfügbar',
@@ -203,48 +204,54 @@ export class Tab2Page {
     }
 
     try {
+      const invitedUsername = this.invitedSearch
+        .replace(/^@/, '')
+        .trim();
+
       await this.supabaseService.createBet({
         title: this.title.trim(),
         description: this.description.trim() || null,
-        invitedUsername,
+        invitedUsername: invitedUsername || null,
         stakeType: this.stakeType,
         stakeAmount: this.stakeType === 'money' ? this.stakeAmount : null,
         stakeCurrency:
-          this.stakeType === 'money' ? this.stakeCurrency.trim() : null,
+          this.stakeType === 'money'
+            ? this.stakeCurrency.trim() || null
+            : null,
         stakeText:
-          this.stakeType === 'other' ? this.stakeText.trim() : null,
+          this.stakeType === 'other'
+            ? this.stakeText.trim() || null
+            : null,
         ruleTemplateKey: this.selectedRuleKey,
         rulesText: this.selectedRuleText,
-        createdLat,
-        createdLng,
+        createdLat: lat,
+        createdLng: lng,
       });
 
-      this.successMessage = 'Wette wurde erstellt.';
-      this.resetForm();
+      this.title = '';
+      this.description = '';
+      this.invitedSearch = '';
+      this.invitedSuggestions = [];
+      this.stakeType = null;
+      this.stakeAmount = null;
+      this.stakeCurrency = '';
+      this.stakeText = '';
+      if (this.ruleTemplates.length > 0) {
+        this.selectedRuleKey = this.ruleTemplates[0].key;
+        this.selectedRuleText = this.ruleTemplates[0].text;
+      } else {
+        this.selectedRuleKey = '';
+        this.selectedRuleText = '';
+      }
 
-      setTimeout(() => {
-        this.router.navigateByUrl('/tabs/tab1');
-      }, 600);
+      this.successMessage = 'Wette wurde gespeichert.';
     } catch (err: any) {
-      console.error('Error creating bet', err);
+      console.error('Fehler beim Erstellen der Wette', err);
       this.errorMessage =
-        err?.message ?? 'Fehler beim Erstellen der Wette.';
+        err?.message ??
+        'Wette konnte nicht gespeichert werden. Bitte später erneut versuchen.';
     } finally {
       this.loading = false;
     }
-  }
-
-  private resetForm() {
-    this.title = '';
-    this.description = '';
-    this.invitedSearch = '';
-    this.invitedSelectedUsername = null;
-    this.invitedSuggestions = [];
-    this.stakeType = 'money';
-    this.stakeAmount = null;
-    this.stakeCurrency = '';
-    this.stakeText = '';
-    this.selectedRuleKey = this.ruleTemplates[0].key;
-    this.selectedRuleText = this.ruleTemplates[0].text;
   }
 }

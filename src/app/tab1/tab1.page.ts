@@ -13,7 +13,6 @@ import {
   IonBadge,
   IonSpinner,
   IonText,
-  IonIcon,
   IonButton,
 } from '@ionic/angular/standalone';
 import { Router } from '@angular/router';
@@ -45,7 +44,6 @@ import {
     IonBadge,
     IonSpinner,
     IonText,
-    IonIcon,
     IonButton,
   ],
 })

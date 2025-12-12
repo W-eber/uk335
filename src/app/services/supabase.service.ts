@@ -218,7 +218,7 @@ export class SupabaseService {
   async createBet(payload: {
     title: string;
     description?: string | null;
-    invitedUsername: string;
+    invitedUsername: string | null;
     stakeType: StakeType;
     stakeAmount?: number | null;
     stakeCurrency?: string | null;
@@ -242,7 +242,7 @@ export class SupabaseService {
         owner_id: user.id,
         title: payload.title,
         description: payload.description ?? null,
-        invited_username: payload.invitedUsername,
+        invited_username: payload.invitedUsername ?? null,
         stake_type: payload.stakeType,
         stake_amount: payload.stakeAmount ?? null,
         stake_currency: payload.stakeCurrency ?? null,
@@ -327,7 +327,6 @@ export class SupabaseService {
     if (error) throw error;
   }
 
-  // Optional: echtes Löschen nach Cancel (nur wenn du es im UI nutzt)
   async deleteBet(betId: string): Promise<void> {
     const { error: photosError } = await this.supabase
       .from('bet_photos')

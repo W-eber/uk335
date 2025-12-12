@@ -11,7 +11,6 @@ import {
   IonCardHeader,
   IonCardContent,
   IonText,
-  IonIcon,
   IonSpinner,
   IonBadge,
 } from '@ionic/angular/standalone';
@@ -57,7 +56,6 @@ interface BetEvent {
     IonCardHeader,
     IonCardContent,
     IonText,
-    IonIcon,
     IonSpinner,
     IonBadge,
   ],
@@ -179,7 +177,6 @@ export class BetDetailPage implements OnInit {
 
     const events: BetEvent[] = [];
 
-    // Wette erstellt
     events.push({
       type: 'created',
       title: 'Wette erstellt',
@@ -191,7 +188,6 @@ export class BetDetailPage implements OnInit {
       longitude: this.bet.created_lng ?? null,
     });
 
-    // Fotos
     for (const photo of this.photos) {
       events.push({
         type: 'photo',
@@ -206,7 +202,6 @@ export class BetDetailPage implements OnInit {
       });
     }
 
-    // Winner-Events
     const winnerStatus = this.bet.winner_status ?? 'none';
 
     if (
@@ -256,7 +251,6 @@ export class BetDetailPage implements OnInit {
       });
     }
 
-    // Cancel-Events
     const cancelStatus = (this.bet.cancel_status ?? 'none') as CancelStatus;
 
     if (
